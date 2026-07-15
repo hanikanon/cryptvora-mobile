@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+
+# Generated native platform (regenerated via `npx cap add android`)
+android/
+ios/
+
+*.log
