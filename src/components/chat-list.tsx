@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { BellOff, Pin, Radio, Users, Archive, VolumeX, ShieldOff, Trash2, X } from "lucide-react";
 import { VerificationBadge } from "@/components/verification-badge";
 import { Avatar } from "@/components/avatar";
+import { BottomSheet } from "@/components/bottom-sheet";
 import { StoriesBar } from "@/components/stories";
 import { chats, type Chat } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -182,57 +183,53 @@ export function ChatList({ activeId }: { activeId?: string }) {
       </ul>
 
       {/* Long-press context menu */}
-      <button
-        aria-hidden={!menuChat}
-        onClick={() => setMenuChat(null)}
-        className={cn(
-          "fixed inset-0 z-50 bg-background/70 backdrop-blur-md transition-opacity",
-          menuChat ? "opacity-100" : "pointer-events-none opacity-0",
-        )}
-      />
-      <div
-        className={cn(
-          "fixed inset-x-3 bottom-3 z-50 origin-bottom transition-all lg:inset-x-auto lg:left-1/2 lg:w-[320px] lg:-translate-x-1/2",
-          menuChat
-            ? "translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none translate-y-3 scale-95 opacity-0",
-        )}
-        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
-      >
+      <BottomSheet open={!!menuChat} onClose={() => setMenuChat(null)}>
         {menuChat && (
-          <div className="glass-strong overflow-hidden rounded-2xl shadow-elevate">
+          <>
             <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3">
               <Avatar seed={menuChat.avatarSeed} name={menuChat.name} size={36} isOwl={menuChat.avatarSeed === "owl"} />
               <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{menuChat.name}</span>
-              <button
+              <motion.button
+                whileTap={{ scale: 0.9 }}
                 onClick={() => setMenuChat(null)}
-                className="grid size-7 shrink-0 place-items-center rounded-full text-muted-foreground active:bg-white/[0.06]"
+                className="grid size-7 shrink-0 place-items-center rounded-full text-muted-foreground"
               >
                 <X className="size-4" />
-              </button>
+              </motion.button>
             </div>
-            {[
-              { icon: Pin, label: menuChat.pinned ? "Unpin" : "Pin" },
-              { icon: menuChat.muted ? BellOff : VolumeX, label: menuChat.muted ? "Unmute" : "Mute" },
-              { icon: Archive, label: "Archive" },
-              { icon: ShieldOff, label: "Block", danger: true },
-              { icon: Trash2, label: "Delete chat", danger: true },
-            ].map((action) => (
-              <button
-                key={action.label}
-                onClick={() => setMenuChat(null)}
-                className={cn(
-                  "flex w-full items-center gap-3 border-b border-border/60 px-4 py-3 text-left text-[14px] font-medium last:border-b-0 active:bg-white/[0.04]",
-                  action.danger ? "text-red-400" : "text-foreground",
-                )}
-              >
-                <action.icon className="size-[18px]" />
-                {action.label}
-              </button>
-            ))}
-          </div>
+            <div className="px-2 py-1">
+              {[
+                { icon: Pin, label: menuChat.pinned ? "Unpin" : "Pin" },
+                { icon: menuChat.muted ? BellOff : VolumeX, label: menuChat.muted ? "Unmute" : "Mute" },
+                { icon: Archive, label: "Archive" },
+                { icon: ShieldOff, label: "Block", danger: true },
+                { icon: Trash2, label: "Delete chat", danger: true },
+              ].map((action) => (
+                <motion.button
+                  key={action.label}
+                  whileTap={{ scale: 0.985 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  onClick={() => setMenuChat(null)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] font-medium hover:bg-white/[0.04]",
+                    action.danger ? "text-red-400" : "text-foreground",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "grid size-8 place-items-center rounded-lg",
+                      action.danger ? "bg-red-400/12" : "bg-white/[0.06]",
+                    )}
+                  >
+                    <action.icon className="size-[17px]" />
+                  </span>
+                  {action.label}
+                </motion.button>
+              ))}
+            </div>
+          </>
         )}
-      </div>
+      </BottomSheet>
     </div>
   );
 }
