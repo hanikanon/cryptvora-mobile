@@ -6,6 +6,7 @@ export interface AvatarProps {
   name: string;
   size?: number;
   isOwl?: boolean;
+  logoUrl?: string;
   online?: boolean;
   ring?: boolean;
   square?: boolean;
@@ -44,6 +45,7 @@ export function Avatar({
   name,
   size = 40,
   isOwl = false,
+  logoUrl,
   online = false,
   ring = false,
   square = false,
@@ -61,10 +63,20 @@ export function Avatar({
         width: size,
         height: size,
         borderRadius: radius,
-        background: `linear-gradient(140deg, ${a} 0%, ${b} 100%)`,
+        background: logoUrl
+          ? "linear-gradient(140deg, #ffffff 0%, #eef0f5 100%)"
+          : `linear-gradient(140deg, ${a} 0%, ${b} 100%)`,
       }}
     >
-      {isOwl ? (
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt={name}
+          className="h-[72%] w-[72%] object-contain"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : isOwl ? (
         <img
           src={OWL_URL}
           alt={name}
