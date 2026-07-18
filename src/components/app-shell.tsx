@@ -1,8 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   MessageSquareText,
-  Users,
-  Radio,
   GraduationCap,
   User,
   Search,
@@ -13,8 +11,6 @@ import {
   Bookmark,
   Newspaper,
   UserPlus,
-  Users2,
-  Megaphone,
   Camera,
   PenSquare,
   X,
@@ -24,7 +20,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Logo, OwlMark } from "@/components/logo";
 import { useSwipeNavigation } from "@/hooks/use-swipe-navigation";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface NavItem {
   to: string;
@@ -35,8 +30,6 @@ interface NavItem {
 
 const primaryNav: NavItem[] = [
   { to: "/", label: "Chats", icon: MessageSquareText, badge: 14 },
-  { to: "/groups", label: "Groups", icon: Users, badge: 3 },
-  { to: "/channels", label: "Channels", icon: Radio },
   { to: "/feed", label: "Feed", icon: Newspaper },
   { to: "/courses", label: "Courses", icon: GraduationCap },
   { to: "/profile", label: "Profile", icon: User },
@@ -44,8 +37,6 @@ const primaryNav: NavItem[] = [
 
 const mobileNav: NavItem[] = [
   { to: "/", label: "Chats", icon: MessageSquareText },
-  { to: "/groups", label: "Groups", icon: Users },
-  { to: "/channels", label: "Channels", icon: Radio },
   { to: "/feed", label: "Feed", icon: Newspaper },
   { to: "/profile", label: "Profile", icon: User },
 ];
@@ -70,7 +61,7 @@ function isActive(path: string, current: string) {
 // The set of top-level tabs that participate in swipe navigation, in the
 // order they sit on screen. Chats owns "/" and every "/chat/:id" route so a
 // swipe away from an open conversation returns to the tab bar naturally.
-export const SWIPE_TABS = ["/", "/feed", "/groups", "/channels", "/profile"] as const;
+export const SWIPE_TABS = ["/", "/feed", "/profile"] as const;
 
 export function swipeIndexForPath(path: string): number {
   if (path === "/" || path.startsWith("/chat")) return 0;
@@ -273,8 +264,6 @@ function MobileBottomNav() {
 
 const composeActions: { to: string; label: string; icon: typeof Plus; hint: string }[] = [
   { to: "/", label: "New Chat", icon: UserPlus, hint: "Start a private conversation" },
-  { to: "/groups", label: "New Group", icon: Users2, hint: "Build a private community" },
-  { to: "/channels", label: "New Channel", icon: Megaphone, hint: "Broadcast to your audience" },
   { to: "/feed", label: "New Story", icon: Camera, hint: "Share a signal or update" },
   { to: "/feed", label: "New Post", icon: PenSquare, hint: "Publish to the feed" },
 ];
@@ -485,20 +474,20 @@ function ComposeFab() {
 const PAGE_IDENTITY: Record<string, { parallax: number; fade: number; lift: number }> = {
   "/": { parallax: 0.02, fade: 0.4, lift: 0 },
   "/feed": { parallax: 0.05, fade: 0.55, lift: 6 },
-  "/groups": { parallax: 0.03, fade: 0.45, lift: 2 },
-  "/channels": { parallax: 0.03, fade: 0.45, lift: 2 },
   "/profile": { parallax: 0.015, fade: 0.32, lift: 0 },
 };
 
 function SwipeablePage({ children }: { children: ReactNode }) {
   const current = useActivePath();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
 
   const tabIndex = swipeIndexForPath(current);
-  // Only the primary tabs (not /chat/:id, /search, /settings, ...) are
-  // swipeable — a conversation should be dismissed explicitly, not swiped.
-  const swipeEnabled = isMobile && tabIndex !== -1 && !current.startsWith("/chat/");
+  // Swipe-to-navigate has been removed — the bottom tab bar (a plain tap)
+  // and the compose "+" menu are the only ways to move between pages now.
+  // `useSwipeNavigation` is still called with enabled:false rather than
+  // removed outright, so nothing here needs restructuring — it simply never
+  // attaches its touch handlers, and dragX stays 0.
+  const swipeEnabled = false;
 
   const { dragX, isDragging, isSettling, containerRef } = useSwipeNavigation({
     count: SWIPE_TABS.length,
@@ -521,7 +510,7 @@ function SwipeablePage({ children }: { children: ReactNode }) {
   return (
     <div
       ref={containerRef}
-      className="touch-pan-y"
+      className="relative touch-pan-y"
       style={{
         transform: dragX || isSettling ? `translateX(${dragX}px) translateY(${liftPx}px) scale(${scale})` : undefined,
         opacity,

@@ -207,6 +207,27 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Global tap/press feedback. Settings screens already felt "alive" because
+   * every control there uses framer-motion's whileTap. Everywhere else was
+   * relying only on a background-color flash (active:bg-white/[...]), which
+   * reads as a hover state, not a press. This gives every button, link, and
+   * role="button" element in the app the same quick, snappy scale-down on
+   * press + eased release that Settings has — no per-component JS needed. */
+  button:not(:disabled),
+  a,
+  [role="button"],
+  .tap-scale {
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  button:not(:disabled):active,
+  a:active,
+  [role="button"]:active,
+  .tap-scale:active {
+    transform: scale(0.96);
+    transition-duration: 0.08s;
+  }
+
   body {
     background-image: var(--wallpaper);
     background-attachment: fixed;

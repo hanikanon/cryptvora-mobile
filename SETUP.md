@@ -42,6 +42,21 @@ SPA (kept all the file-based routes, kept the router, just dropped the Nitro
 server layer), which is what Capacitor needs. No server-function usage was
 found anywhere in the actual app code, so nothing was lost.
 
+## In-place updates (no more uninstall-before-install)
+
+GitHub Actions runs on a fresh machine every build, so by default Android's
+debug signing key was different every time — that's why Android was forcing
+you to uninstall the old app before installing the new one. I generated a
+fixed debug keystore (`android-keystore/debug.keystore.b64`, committed to the
+repo) and added a step to the workflow that installs it before every build.
+From now on, every APK is signed with the same key, so `adb install` /
+tapping the new APK will just update the app in place.
+
+**One-time catch:** the very first APK you install from this new keystore
+still needs a clean install (old one on your phone was signed with a
+different, throwaway key). After that first install, every future build from
+this repo updates in place.
+
 ## Build it (same routine as before)
 
 Since this is a fairly large restructuring (new files, removed old

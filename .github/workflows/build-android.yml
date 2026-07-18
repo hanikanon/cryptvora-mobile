@@ -31,6 +31,14 @@ jobs:
       - name: Add Android platform (first run only)
         run: test -d android || npx cap add android
 
+      - name: Generate app icon from resources/icon.png
+        run: npx capacitor-assets generate --android
+
+      - name: Use fixed debug keystore (so updates install without uninstalling)
+        run: |
+          mkdir -p ~/.android
+          base64 -d android-keystore/debug.keystore.b64 > ~/.android/debug.keystore
+
       - name: Sync Capacitor
         run: npx cap sync android
 

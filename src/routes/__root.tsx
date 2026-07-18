@@ -7,12 +7,14 @@ import {
   useRouterState,
   HeadContent,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell, usePageTransitionDirection, SWIPE_TABS } from "../components/app-shell";
 import { ThemeProvider } from "../hooks/use-theme";
+import { WelcomeScreen } from "../components/auth/WelcomeScreen";
+import { OtpScreen } from "../components/auth/OtpScreen";
 
 function NotFoundComponent() {
   return (
@@ -128,36 +130,107 @@ function RootComponent() {
   const isSwipeTab = (SWIPE_TABS as readonly string[]).includes(path);
   const xOffset = direction === "right" ? 28 : direction === "left" ? -28 : 0;
 
+  // Was the *previous* screen a conversation? Needed so the chat list can
+  // tell "closing a conversation" apart from a normal tab switch — it should
+  // sit perfectly still in both directions of that specific transition, with
+  // only the conversation layer itself moving. Scoped to this pairing only;
+  // every other route keeps its existing transition untouched below.
+  const prevPathRef = useRef(path);
+  const cameFromThread = prevPathRef.current.startsWith("/chat/") && !isChatThread;
+  useEffect(() => {
+    prevPathRef.current = path;
+  }, [path]);
+
+  // Same expo-out curve used throughout the Settings screens — this specific
+  // curve (fast start, long soft landing, no overshoot) is what reads as
+  // "native app" rather than "web page fading in". Using it everywhere a
+  // route changes keeps the whole app feeling like one consistent platform.
+  const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+  // Mock sign-in gate, entirely local — no real Google account is ever
+  // contacted. "Continue with Google" just shows a fake email + OTP screen
+  // that accepts any 6 digits, then unlocks the real app. Remembered per
+  // device via localStorage so it's a one-time thing, not on every launch.
+  const AUTH_KEY = "cryptvora_mock_verified";
+  const [authStage, setAuthStage] = useState<"welcome" | "otp" | "app">(() => {
+    if (typeof window === "undefined") return "welcome";
+    return window.localStorage.getItem(AUTH_KEY) === "1" ? "app" : "welcome";
+  });
+  const MOCK_EMAIL = "alex.morgan@gmail.com";
+
   return (
     <QueryClientProvider client={queryClient}>
       <HeadContent />
       <ThemeProvider>
+        {authStage !== "app" ? (
+          <AnimatePresence mode="wait" initial={false}>
+            {authStage === "welcome" ? (
+              <WelcomeScreen key="welcome" onContinue={() => setAuthStage("otp")} />
+            ) : (
+              <OtpScreen
+                key="otp"
+                email={MOCK_EMAIL}
+                onBack={() => setAuthStage("welcome")}
+                onVerified={() => {
+                  window.localStorage.setItem(AUTH_KEY, "1");
+                  setAuthStage("app");
+                }}
+              />
+            )}
+          </AnimatePresence>
+        ) : (
         <AppShell>
-          <AnimatePresence mode="popLayout" initial={false}>
-            {isSwipeTab ? (
-              // The horizontal swipe gesture already animates position/opacity for
-              // these tabs — a second competing entrance here made things "pop" in.
-              // Just a light, quick fade so direct (non-swipe) taps still feel smooth.
+          <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+            {isChatThread ? (
+              // The conversation is a real layer stacked above the chat
+              // list: it slides fully in from the right on open and fully
+              // back out to the right on close/back, at all times covering
+              // (never blending or fading with) whatever is underneath —
+              // the classic Telegram push/pop feel.
               <motion.div
                 key={path}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18, ease: "easeOut" }}
+                className="absolute inset-0 z-20 bg-background"
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ duration: 0.28, ease: EASE }}
+                style={{ willChange: "transform" }}
+              >
+                <Outlet />
+              </motion.div>
+            ) : isSwipeTab && cameFromThread ? (
+              // Chat list reappearing after a conversation closes: it was
+              // never actually animating (it sat still the whole time,
+              // underneath) — no entrance here, or it would look like a
+              // second, competing motion on top of the conversation's own
+              // slide-out. This preserves its scroll position too, since it
+              // isn't being treated as a fresh transition.
+              <motion.div key={path} initial={false} animate={{ opacity: 1, x: 0 }}>
+                <Outlet />
+              </motion.div>
+            ) : isSwipeTab ? (
+              // The drag gesture animates position/opacity itself while a
+              // finger is down — this only covers *programmatic* nav (tapping
+              // the bottom bar), so it stays light, but now nudges in the
+              // same direction as a swipe would, with the same curve, instead
+              // of a flat fade-only pop.
+              <motion.div
+                key={path}
+                custom={direction}
+                initial={{ opacity: 0, x: xOffset * 0.6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -xOffset * 0.35 }}
+                transition={{ duration: 0.22, ease: EASE }}
               >
                 <Outlet />
               </motion.div>
             ) : (
               <motion.div
                 key={path}
-                initial={
-                  isChatThread
-                    ? { opacity: 0, x: 16 }
-                    : { opacity: 0, x: xOffset, y: xOffset === 0 ? 8 : 0, scale: 0.985 }
-                }
+                initial={{ opacity: 0, x: xOffset, y: xOffset === 0 ? 10 : 0, scale: 0.98 }}
                 animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 28, mass: 0.8 }}
+                exit={{ opacity: 0, x: -xOffset * 0.5, y: xOffset === 0 ? -6 : 0, scale: 0.985 }}
+                transition={{ duration: 0.26, ease: EASE }}
                 style={{ willChange: "transform, opacity" }}
               >
                 <Outlet />
@@ -165,6 +238,7 @@ function RootComponent() {
             )}
           </AnimatePresence>
         </AppShell>
+        )}
       </ThemeProvider>
     </QueryClientProvider>
   );
