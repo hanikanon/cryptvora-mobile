@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, PlayCircle } from "lucide-react";
 import { OwlMark } from "@/components/logo";
 import { useCall } from "@/hooks/use-call";
 
@@ -25,6 +25,8 @@ export function CallOverlay() {
     cameraOff,
     localStream,
     remoteStream,
+    playbackBlocked,
+    retryPlayback,
     answerCall,
     declineCall,
     endCall,
@@ -34,19 +36,47 @@ export function CallOverlay() {
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  // For video calls, this <video> element carries the audio too — so if the
+  // WebView blocks its autoplay, both picture and sound are stuck until a
+  // real tap unblocks them. Tracked separately from the hook's
+  // `playbackBlocked` (which only concerns the audio-only path).
+  const [videoNeedsTap, setVideoNeedsTap] = useState(false);
 
   useEffect(() => {
     if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
   }, [localStream]);
 
   useEffect(() => {
-    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
+    const el = remoteVideoRef.current;
+    if (!el) return;
+    el.srcObject = remoteStream;
+    if (remoteStream) {
+      el
+        .play()
+        .then(() => setVideoNeedsTap(false))
+        .catch(() => setVideoNeedsTap(true));
+    } else {
+      setVideoNeedsTap(false);
+    }
   }, [remoteStream]);
 
   if (status === "idle") return null;
 
   const isVideo = kind === "video";
   const showRemoteVideo = isVideo && status === "connected" && remoteStream;
+  const showPlaybackPrompt =
+    status === "connected" && (isVideo ? videoNeedsTap : playbackBlocked);
+
+  const enablePlayback = () => {
+    const el = remoteVideoRef.current;
+    if (el) {
+      el
+        .play()
+        .then(() => setVideoNeedsTap(false))
+        .catch(() => setVideoNeedsTap(true));
+    }
+    retryPlayback();
+  };
 
   return createPortal(
     <AnimatePresence>
@@ -68,6 +98,23 @@ export function CallOverlay() {
           />
         )}
         {showRemoteVideo && <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-black/60" />}
+
+        {/* WebView autoplay policies sometimes block the remote stream
+         * from starting on its own — this gives the person an explicit,
+         * reliable way to start it with one tap instead of relying on the
+         * browser's own (often invisible-in-WebView) native prompt. */}
+        {showPlaybackPrompt && (
+          <button
+            type="button"
+            onClick={enablePlayback}
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/70 text-white"
+          >
+            <PlayCircle className="size-14" />
+            <span className="text-sm font-medium">
+              Tap to enable {isVideo ? "video & sound" : "sound"}
+            </span>
+          </button>
+        )}
 
         {/* Your own camera preview, picture-in-picture, only for video calls */}
         {isVideo && localStream && (

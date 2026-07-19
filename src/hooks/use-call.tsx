@@ -31,6 +31,16 @@ interface CallState {
   error: string | null;
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
+  /** True once we've detected that the WebView blocked automatic playback
+   * of the remote audio (its autoplay policy requires a real tap first).
+   * Only meaningful for audio-only calls — video calls handle their own
+   * playback state locally in the overlay, since that's where the
+   * <video> element lives. */
+  playbackBlocked: boolean;
+  /** Call this from a real user tap to retry playing the blocked remote
+   * audio — browsers only allow media to start after a user gesture, so
+   * this must run inside a click handler, not automatically. */
+  retryPlayback: () => void;
   startCall: (remoteId: string, kind: CallKind) => void;
   answerCall: () => void;
   declineCall: () => void;
@@ -69,6 +79,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [playbackBlocked, setPlaybackBlocked] = useState(false);
 
   const peerRef = useRef<Peer | null>(null);
   const connRef = useRef<MediaConnection | null>(null);
@@ -191,7 +202,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
     localStreamRef.current = null;
     setLocalStream(null);
     setRemoteStream(null);
+    setPlaybackBlocked(false);
     if (remoteAudioRef.current) {
+      remoteAudioRef.current.pause();
       remoteAudioRef.current.srcObject = null;
     }
   }, []);
@@ -211,20 +224,35 @@ export function CallProvider({ children }: { children: ReactNode }) {
   }, [cleanupStreams]);
 
   const wireConnection = useCallback(
-    (call: MediaConnection) => {
+    (call: MediaConnection, callKind: CallKind) => {
       connRef.current = call;
       call.on("stream", (stream) => {
         stopConnectTimeout();
         setRemoteStream(stream);
-        // Audio always plays via a dedicated element (works even for video
-        // calls — the <video> tag in the overlay is also allowed to carry
-        // audio, but keeping a fallback audio element is harmless and
-        // guarantees sound even before the overlay's <video> mounts).
-        if (!remoteAudioRef.current) {
-          remoteAudioRef.current = new Audio();
-          remoteAudioRef.current.autoplay = true;
+        setPlaybackBlocked(false);
+
+        if (callKind === "audio") {
+          // Voice calls have no <video> element to carry the audio, so this
+          // standalone element is the only thing playing sound. WebViews
+          // often block its autoplay() until a real tap happens — if that
+          // happens, surface it as `playbackBlocked` so the UI can show a
+          // "tap to enable sound" control.
+          if (!remoteAudioRef.current) {
+            remoteAudioRef.current = new Audio();
+          }
+          const audioEl = remoteAudioRef.current;
+          audioEl.autoplay = true;
+          audioEl.srcObject = stream;
+          audioEl.play().catch(() => setPlaybackBlocked(true));
+        } else if (remoteAudioRef.current) {
+          // Video calls: the <video> element in the overlay carries both
+          // video and audio for this same stream. Make sure the standalone
+          // audio element isn't also playing it — that would double up the
+          // sound (echo/robotic doubling).
+          remoteAudioRef.current.pause();
+          remoteAudioRef.current.srcObject = null;
         }
-        remoteAudioRef.current.srcObject = stream;
+
         setStatus("connected");
         setSeconds(0);
         stopTimer();
@@ -235,6 +263,22 @@ export function CallProvider({ children }: { children: ReactNode }) {
     },
     [endCall],
   );
+
+  /** Re-attempt playback of the blocked remote audio. Must be called from
+   * inside a real user-tap handler — WebView autoplay policies only allow
+   * media to start playing as a direct result of a user gesture, not from
+   * a timer or effect. */
+  const retryPlayback = useCallback(() => {
+    const audioEl = remoteAudioRef.current;
+    if (!audioEl || !audioEl.srcObject) {
+      setPlaybackBlocked(false);
+      return;
+    }
+    audioEl
+      .play()
+      .then(() => setPlaybackBlocked(false))
+      .catch(() => setPlaybackBlocked(true));
+  }, []);
 
   const startCall = useCallback(
     async (remoteId: string, callKind: CallKind) => {
@@ -257,7 +301,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         setPeerName(cleaned);
         setStatus("calling");
         const call = peer.call(`cryptvora-${cleaned}`, stream, { metadata: { kind: callKind } });
-        wireConnection(call);
+        wireConnection(call, callKind);
 
         stopConnectTimeout();
         connectTimeoutRef.current = setTimeout(() => {
@@ -292,7 +336,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       localStreamRef.current = stream;
       setLocalStream(stream);
       call.answer(stream);
-      wireConnection(call);
+      wireConnection(call, callKind);
     } catch {
       setError(
         callKind === "video"
@@ -338,6 +382,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
         error,
         localStream,
         remoteStream,
+        playbackBlocked,
+        retryPlayback,
         startCall,
         answerCall,
         declineCall,
