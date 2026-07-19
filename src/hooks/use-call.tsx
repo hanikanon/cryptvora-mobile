@@ -12,6 +12,13 @@ import type { MediaConnection } from "peerjs";
 
 type CallStatus = "idle" | "calling" | "ringing" | "connected";
 type CallKind = "audio" | "video";
+/** Whether audio/video packets are actually flowing between the two
+ * devices — distinct from `status`, which only tracks the signaling-level
+ * handshake. It's possible for `status` to say "connected" while this
+ * stays "connecting" forever if the two networks (e.g. two different
+ * mobile carriers) can never establish a working ICE/TURN path — that's
+ * exactly what silent "no audio, no video, both sides" looks like. */
+type MediaFlowState = "connecting" | "live" | "failed";
 
 interface CallState {
   /** Your own call code — share this with someone so *they* can call *you*. */
@@ -37,6 +44,9 @@ interface CallState {
    * playback state locally in the overlay, since that's where the
    * <video> element lives. */
   playbackBlocked: boolean;
+  /** See MediaFlowState — tells the UI whether audio/video packets are
+   * actually reaching the other person, separately from `status`. */
+  mediaState: MediaFlowState;
   /** Call this from a real user tap to retry playing the blocked remote
    * audio — browsers only allow media to start after a user gesture, so
    * this must run inside a click handler, not automatically. */
@@ -80,6 +90,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [playbackBlocked, setPlaybackBlocked] = useState(false);
+  const [mediaState, setMediaState] = useState<MediaFlowState>("connecting");
 
   const peerRef = useRef<Peer | null>(null);
   const connRef = useRef<MediaConnection | null>(null);
@@ -90,6 +101,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const pendingCallRef = useRef<MediaConnection | null>(null);
   const pendingKindRef = useRef<CallKind>("audio");
   const visibilityHandlerRef = useRef<(() => void) | null>(null);
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+  const iceHandlerRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -197,17 +210,27 @@ export function CallProvider({ children }: { children: ReactNode }) {
     connectTimeoutRef.current = null;
   };
 
+  const detachIceMonitor = useCallback(() => {
+    if (pcRef.current && iceHandlerRef.current) {
+      pcRef.current.removeEventListener("iceconnectionstatechange", iceHandlerRef.current);
+    }
+    pcRef.current = null;
+    iceHandlerRef.current = null;
+  }, []);
+
   const cleanupStreams = useCallback(() => {
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
     setLocalStream(null);
     setRemoteStream(null);
     setPlaybackBlocked(false);
+    setMediaState("connecting");
+    detachIceMonitor();
     if (remoteAudioRef.current) {
       remoteAudioRef.current.pause();
       remoteAudioRef.current.srcObject = null;
     }
-  }, []);
+  }, [detachIceMonitor]);
 
   const endCall = useCallback(() => {
     connRef.current?.close();
@@ -257,11 +280,39 @@ export function CallProvider({ children }: { children: ReactNode }) {
         setSeconds(0);
         stopTimer();
         timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+
+        // `status` above just means the two devices found each other and
+        // agreed to a call — it does NOT mean media packets are actually
+        // flowing yet. That depends on ICE actually connecting, which can
+        // silently never happen (both sides stuck at "checking"/"failed")
+        // when the two networks can't reach each other directly and the
+        // TURN relay doesn't work either. Watching iceConnectionState is
+        // the only reliable way to know whether real audio/video is
+        // getting through.
+        setMediaState("connecting");
+        const pc = (call as unknown as { peerConnection?: RTCPeerConnection }).peerConnection;
+        if (pc) {
+          detachIceMonitor();
+          pcRef.current = pc;
+          const onIceChange = () => {
+            const iceState = pc.iceConnectionState;
+            if (iceState === "connected" || iceState === "completed") {
+              setMediaState("live");
+            } else if (iceState === "failed" || iceState === "disconnected" || iceState === "closed") {
+              setMediaState("failed");
+            } else {
+              setMediaState("connecting");
+            }
+          };
+          pc.addEventListener("iceconnectionstatechange", onIceChange);
+          iceHandlerRef.current = onIceChange;
+          onIceChange();
+        }
       });
       call.on("close", endCall);
       call.on("error", endCall);
     },
-    [endCall],
+    [endCall, detachIceMonitor],
   );
 
   /** Re-attempt playback of the blocked remote audio. Must be called from
@@ -383,6 +434,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         localStream,
         remoteStream,
         playbackBlocked,
+        mediaState,
         retryPlayback,
         startCall,
         answerCall,

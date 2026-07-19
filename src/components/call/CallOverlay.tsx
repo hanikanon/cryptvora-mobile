@@ -26,6 +26,7 @@ export function CallOverlay() {
     localStream,
     remoteStream,
     playbackBlocked,
+    mediaState,
     retryPlayback,
     answerCall,
     declineCall,
@@ -143,6 +144,15 @@ export function CallOverlay() {
               {status === "calling" && (isVideo ? "Video calling…" : "Calling…")}
               {status === "connected" && formatDuration(seconds)}
             </p>
+            {status === "connected" && mediaState !== "live" && (
+              <p
+                className={`mt-1 text-[11px] ${mediaState === "failed" ? "text-red-400" : "text-amber-400"}`}
+              >
+                {mediaState === "failed"
+                  ? "Connection trouble — audio/video may not come through"
+                  : "Connecting audio/video…"}
+              </p>
+            )}
           </div>
         </div>
 
