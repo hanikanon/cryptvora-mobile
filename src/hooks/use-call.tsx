@@ -78,6 +78,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingCallRef = useRef<MediaConnection | null>(null);
   const pendingKindRef = useRef<CallKind>("audio");
+  const visibilityHandlerRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,7 +122,29 @@ export function CallProvider({ children }: { children: ReactNode }) {
         setConnected(true);
       });
 
-      peer.on("disconnected", () => setConnected(false));
+      peer.on("disconnected", () => {
+        setConnected(false);
+        // PeerJS does NOT auto-reconnect on its own after a drop — without
+        // this, a code goes silently dead (looks fine, shared, but nothing
+        // ever arrives) the moment Android's battery-saving network policy
+        // kills an idle background connection, which happens easily just
+        // from the screen turning off for a bit.
+        if (!peer.destroyed) peer.reconnect();
+      });
+
+      // Belt-and-suspenders: any time the app comes back to the foreground,
+      // proactively make sure we're still connected. This is what actually
+      // matters in practice — a friend generates a code, backgrounds the
+      // app for a few minutes, then someone tries to call; without this,
+      // that code is already dead by the time the call comes in.
+      const onVisible = () => {
+        if (document.visibilityState === "visible" && peer.disconnected && !peer.destroyed) {
+          peer.reconnect();
+        }
+      };
+      document.addEventListener("visibilitychange", onVisible);
+      window.addEventListener("focus", onVisible);
+      visibilityHandlerRef.current = onVisible;
 
       peer.on("error", (err) => {
         // "unavailable-id" just means this device already has an open
@@ -144,6 +167,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      if (visibilityHandlerRef.current) {
+        document.removeEventListener("visibilitychange", visibilityHandlerRef.current);
+        window.removeEventListener("focus", visibilityHandlerRef.current);
+      }
       peerRef.current?.destroy();
       peerRef.current = null;
     };
