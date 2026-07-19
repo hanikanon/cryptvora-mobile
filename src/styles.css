@@ -55,6 +55,11 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-bubble-in: var(--bubble-in);
+  --color-bubble-out: var(--bubble-out);
+  --color-bubble-out-foreground: var(--bubble-out-foreground);
+  --color-online: var(--online);
+  --color-surface-elevated: var(--surface-elevated);
 
   --font-display: "Inter", "SF Pro Display", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter", "SF Pro Text", ui-sans-serif, system-ui, sans-serif;
@@ -123,6 +128,12 @@
     radial-gradient(900px 600px at 100% 0%, oklch(0.3 0.05 250 / 0.14), transparent 55%),
     radial-gradient(700px 500px at 50% 120%, oklch(0.28 0.06 320 / 0.12), transparent 60%);
 
+  --surface-elevated: oklch(0.2 0.009 280);
+  --bubble-in: var(--surface-2);
+  --bubble-out: var(--primary);
+  --bubble-out-foreground: var(--primary-foreground);
+  --online: var(--success);
+
   color-scheme: dark;
 }
 
@@ -181,6 +192,12 @@
   --wallpaper:
     radial-gradient(1000px 600px at 10% -10%, oklch(0.85 0.09 300 / 0.35), transparent 60%),
     radial-gradient(800px 500px at 100% 10%, oklch(0.88 0.07 250 / 0.3), transparent 55%);
+
+  --surface-elevated: oklch(0.96 0.005 90);
+  --bubble-in: var(--surface-2);
+  --bubble-out: var(--primary);
+  --bubble-out-foreground: var(--primary-foreground);
+  --online: var(--success);
 
   color-scheme: light;
 }
@@ -280,6 +297,90 @@
   backdrop-filter: blur(28px) saturate(160%);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
   border: 1px solid var(--border);
+}
+
+/* Cryptvora surface backdrop, used behind the redesigned conversation screen */
+@utility bg-cryptvora {
+  background:
+    radial-gradient(1200px 600px at 20% -10%, oklch(0.28 0.09 300 / 0.35), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, oklch(0.3 0.1 320 / 0.3), transparent 55%),
+    linear-gradient(180deg, oklch(0.13 0.02 285), oklch(0.11 0.02 285));
+}
+
+@utility bg-bubble-gradient {
+  background: linear-gradient(
+    140deg,
+    color-mix(in oklab, var(--primary) 92%, black 8%),
+    color-mix(in oklab, var(--primary-glow) 88%, black 6%)
+  );
+}
+
+/* soft press, used by the redesigned conversation screen's buttons */
+@utility tap {
+  transition:
+    transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 160ms ease;
+}
+@utility tap-active {
+  transform: scale(0.94);
+}
+
+@utility scroll-fade {
+  scrollbar-width: none;
+}
+.scroll-fade::-webkit-scrollbar {
+  display: none;
+}
+
+/* GPU hints for smooth 60fps scroll & animation */
+@utility gpu {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* Floating curved pill container used by the redesigned conversation header */
+@utility pill-bar {
+  border-radius: 24px;
+  background: color-mix(in oklab, var(--surface-elevated) 62%, transparent);
+  backdrop-filter: saturate(160%) blur(28px);
+  box-shadow:
+    0 1px 0 0 color-mix(in oklab, white 6%, transparent) inset,
+    0 -1px 0 0 color-mix(in oklab, black 30%, transparent) inset,
+    0 14px 34px -22px color-mix(in oklab, black 70%, transparent);
+  border: 1px solid color-mix(in oklab, white 5%, transparent);
+}
+
+@keyframes online-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--online) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--online) 0%, transparent);
+  }
+}
+@utility online-dot {
+  background: var(--online);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--online) 55%, transparent);
+  animation: online-pulse 2.4s ease-out infinite;
+}
+
+@keyframes reaction-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@utility animate-reaction-pop {
+  animation: reaction-pop 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
 
 @utility ring-brand {

@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { ChatList } from "@/components/chat-list";
-import { ConversationPanel, InfoPanel } from "@/components/conversation";
+import { ChatThread } from "@/components/chat/ChatThread";
+import { InfoPanel } from "@/components/conversation";
 import { chats } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/chat/$id")({
@@ -56,7 +57,7 @@ function ChatDetail() {
       </section>
 
       <section className="lg:h-screen lg:overflow-hidden xl:mr-0">
-        <ConversationPanel chat={chat} />
+        <ChatThread chat={chat} />
       </section>
 
       <InfoPanel chat={chat} />
