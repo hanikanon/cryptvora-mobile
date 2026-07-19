@@ -14,7 +14,7 @@ import { useCall } from "@/hooks/use-call";
  * (like a Zoom meeting ID), generated once and reused every time.
  */
 export function CallPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { myCallId, startCall, error } = useCall();
+  const { myCallId, connected, startCall, error } = useCall();
   const [remoteCode, setRemoteCode] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -40,6 +40,14 @@ export function CallPanel({ open, onClose }: { open: boolean; onClose: () => voi
     <BottomSheet open={open} onClose={onClose} title="Call">
       <div className="space-y-5 px-1 pb-2">
         <div className="rounded-2xl border border-border bg-surface/60 p-4 text-center">
+          <div className="mb-1 flex items-center justify-center gap-1.5">
+            <span
+              className={`size-1.5 rounded-full ${connected ? "bg-emerald-400" : "animate-pulse bg-amber-400"}`}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {connected ? "Ready to call" : "Connecting…"}
+            </p>
+          </div>
           <p className="text-[11px] text-muted-foreground">Your call code — share it so a friend can call you</p>
           <div className="mt-2 flex items-center justify-center gap-2">
             <span className="text-2xl font-semibold tracking-[0.2em]">{myCallId ?? "…"}</span>
@@ -68,7 +76,7 @@ export function CallPanel({ open, onClose }: { open: boolean; onClose: () => voi
             <button
               type="button"
               onClick={() => call("audio")}
-              disabled={!remoteCode.trim()}
+              disabled={!remoteCode.trim() || !connected}
               className="flex items-center justify-center gap-2 rounded-xl bg-white/10 py-3 text-sm font-semibold text-foreground disabled:opacity-40"
             >
               <Phone className="size-4" />
@@ -77,7 +85,7 @@ export function CallPanel({ open, onClose }: { open: boolean; onClose: () => voi
             <button
               type="button"
               onClick={() => call("video")}
-              disabled={!remoteCode.trim()}
+              disabled={!remoteCode.trim() || !connected}
               className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"
             >
               <Video className="size-4" />

@@ -16,6 +16,10 @@ type CallKind = "audio" | "video";
 interface CallState {
   /** Your own call code — share this with someone so *they* can call *you*. */
   myCallId: string | null;
+  /** Whether this device has actually finished connecting to the signaling
+   * server yet. If this is false, calling won't work — not a "friend's
+   * device" problem, this device just isn't ready. */
+  connected: boolean;
   status: CallStatus;
   kind: CallKind;
   /** The other person's call code, once known (either you dialed them, or
@@ -55,6 +59,7 @@ function getOrCreateDeviceCode(): string {
 
 export function CallProvider({ children }: { children: ReactNode }) {
   const [myCallId, setMyCallId] = useState<string | null>(null);
+  const [connected, setConnected] = useState(false);
   const [status, setStatus] = useState<CallStatus>("idle");
   const [kind, setKind] = useState<CallKind>("audio");
   const [peerName, setPeerName] = useState<string | null>(null);
@@ -70,6 +75,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingCallRef = useRef<MediaConnection | null>(null);
   const pendingKindRef = useRef<CallKind>("audio");
 
@@ -78,10 +84,44 @@ export function CallProvider({ children }: { children: ReactNode }) {
     import("peerjs").then(({ default: Peer }) => {
       if (cancelled) return;
       const code = getOrCreateDeviceCode();
-      const peer = new Peer(`cryptvora-${code}`, { debug: 0 });
+      const peer = new Peer(`cryptvora-${code}`, {
+        debug: 0,
+        config: {
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" },
+            // Free public TURN relay (openrelay.metered.ca) — without a TURN
+            // server, two phones on different mobile-carrier networks (e.g.
+            // different countries) very often can't establish a direct
+            // connection at all, even though the call *looks* like it's
+            // trying to connect. STUN alone only works for simpler home
+            // wifi-style networks.
+            {
+              urls: "turn:openrelay.metered.ca:80",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:443",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:443?transport=tcp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+          ],
+        },
+      });
       peerRef.current = peer;
 
-      peer.on("open", () => setMyCallId(code));
+      peer.on("open", () => {
+        setMyCallId(code);
+        setConnected(true);
+      });
+
+      peer.on("disconnected", () => setConnected(false));
 
       peer.on("error", (err) => {
         // "unavailable-id" just means this device already has an open
@@ -114,6 +154,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
     timerRef.current = null;
   };
 
+  const stopConnectTimeout = () => {
+    if (connectTimeoutRef.current) clearTimeout(connectTimeoutRef.current);
+    connectTimeoutRef.current = null;
+  };
+
   const cleanupStreams = useCallback(() => {
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
@@ -130,6 +175,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     pendingCallRef.current = null;
     cleanupStreams();
     stopTimer();
+    stopConnectTimeout();
     setSeconds(0);
     setStatus("idle");
     setPeerName(null);
@@ -141,6 +187,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     (call: MediaConnection) => {
       connRef.current = call;
       call.on("stream", (stream) => {
+        stopConnectTimeout();
         setRemoteStream(stream);
         // Audio always plays via a dedicated element (works even for video
         // calls — the <video> tag in the overlay is also allowed to carry
@@ -165,7 +212,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const startCall = useCallback(
     async (remoteId: string, callKind: CallKind) => {
       const peer = peerRef.current;
-      if (!peer) return;
+      if (!peer || !connected) {
+        setError("Still connecting to the calling network — wait a second and try again.");
+        return;
+      }
       const cleaned = remoteId.trim().toUpperCase().replace(/^CRYPTVORA-/, "");
       if (!cleaned) return;
       setError(null);
@@ -181,6 +231,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
         setStatus("calling");
         const call = peer.call(`cryptvora-${cleaned}`, stream, { metadata: { kind: callKind } });
         wireConnection(call);
+
+        stopConnectTimeout();
+        connectTimeoutRef.current = setTimeout(() => {
+          // No "stream" event after 25s means either the other device never
+          // answered (app closed, wrong code), or the two networks couldn't
+          // establish a direct/relayed connection at all.
+          setError("Couldn't reach them — make sure they have the app open and the code is right.");
+          endCall();
+        }, 25000);
       } catch {
         setError(
           callKind === "video"
@@ -190,7 +249,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         setStatus("idle");
       }
     },
-    [wireConnection],
+    [wireConnection, connected, endCall],
   );
 
   const answerCall = useCallback(async () => {
@@ -242,6 +301,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     <CallContext.Provider
       value={{
         myCallId,
+        connected,
         status,
         kind,
         peerName,
