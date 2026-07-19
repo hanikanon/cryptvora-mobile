@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, type PanInfo } from "framer-motion";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * A native-feeling bottom sheet: backdrop fade, spring-driven slide up, and
@@ -8,6 +9,13 @@ import { useEffect } from "react";
  * Ported from Cryptvora's reference animation system — kept deliberately
  * light: only `transform`/`opacity` ever animate, so it stays GPU-composited
  * and cheap even on mid-range Android.
+ *
+ * Rendered through a portal into document.body. Route screens are wrapped in
+ * Framer Motion containers that keep a CSS transform applied even at rest
+ * (that's how the page-slide transitions work) — and a CSS transform on any
+ * ancestor turns `position: fixed` into something scoped to that ancestor
+ * instead of the real screen. Portalling out of that tree is what keeps this
+ * sheet full-screen and interactive no matter where it's opened from.
  */
 export function BottomSheet({
   open,
@@ -31,7 +39,7 @@ export function BottomSheet({
     if (info.offset.y > 100 || info.velocity.y > 500) onClose();
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -77,6 +85,7 @@ export function BottomSheet({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

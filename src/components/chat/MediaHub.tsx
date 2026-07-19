@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { X, Image as ImageIcon, Film, FileText, Mic, Link2, LayoutGrid, Download, Play } from "lucide-react";
 import type { Message } from "./MessageItem";
@@ -64,7 +65,7 @@ export function MediaHub({
 
   const empty = counts[tab] === 0;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -226,7 +227,8 @@ export function MediaHub({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 

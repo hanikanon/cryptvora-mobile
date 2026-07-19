@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { OwlMark } from "@/components/logo";
@@ -47,7 +48,7 @@ export function CallOverlay() {
   const isVideo = kind === "video";
   const showRemoteVideo = isVideo && status === "connected" && remoteStream;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <motion.div
         key="call-overlay"
@@ -130,7 +131,8 @@ export function CallOverlay() {
           )}
         </div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 

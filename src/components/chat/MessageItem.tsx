@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
 import { Check, CheckCheck, CornerUpLeft, Pin, SmilePlus } from "lucide-react";
 import { VoiceMessage } from "./VoiceMessage";
@@ -230,7 +231,7 @@ function ContextSheet({
   onReact: (e: string) => void;
   onPick: (a: MessageAction) => void;
 }) {
-  return (
+  return createPortal(
     <AnimatePresence>
       {menu && (
         <>
@@ -276,6 +277,7 @@ function ContextSheet({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
