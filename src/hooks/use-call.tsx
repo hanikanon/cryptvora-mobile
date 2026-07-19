@@ -61,6 +61,64 @@ interface CallState {
 
 const CallContext = createContext<CallState | null>(null);
 
+// ---- TURN servers -----------------------------------------------------
+// A TURN relay is what lets two phones on completely different networks
+// (different countries, different mobile carriers) actually exchange audio
+// and video — without one, calls between such networks fail *even though
+// the app UI can say "connected"* (the signaling handshake succeeds; the
+// actual media never gets a path). No single free TURN provider is 100%
+// reliable on its own, so this combines two independent ones — if one is
+// overloaded or blocked on a given network, the browser can still find a
+// working path through the other. Both are free and need no signup.
+const STATIC_ICE_SERVERS: RTCIceServer[] = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+  // Open Relay Project (metered.ca) — shared demo TURN server, works on
+  // ports 80/443 to get through most corporate/carrier firewalls.
+  {
+    urls: "turn:openrelay.metered.ca:80",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+  {
+    urls: "turn:openrelay.metered.ca:443",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+  {
+    urls: "turn:openrelay.metered.ca:443?transport=tcp",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+];
+
+/** A second, independent free TURN relay (elixir-webrtc/rel's public test
+ * deployment) — no account needed, issues short-lived credentials on
+ * request. Its maintainers note it's meant for testing rather than heavy
+ * production traffic, so this is a bonus relay path layered on top of the
+ * static one above, not a replacement for it. */
+async function fetchBonusTurnServer(): Promise<RTCIceServer | null> {
+  try {
+    const username = `cv${Date.now()}`;
+    const res = await fetch(`https://turn.elixir-webrtc.org/?service=turn&username=${username}`, {
+      method: "POST",
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { username?: string; password?: string; uris?: string[] };
+    if (!data.uris?.length || !data.username || !data.password) return null;
+    return { urls: data.uris, username: data.username, credential: data.password };
+  } catch {
+    // Offline, this particular server down, etc. — the static list above
+    // still gives the call a chance.
+    return null;
+  }
+}
+
+async function fetchIceServers(): Promise<RTCIceServer[]> {
+  const bonus = await fetchBonusTurnServer();
+  return bonus ? [...STATIC_ICE_SERVERS, bonus] : STATIC_ICE_SERVERS;
+}
+
 // One random, memorable-ish code per device, generated once and kept in
 // localStorage — this is what gets shown to the person as "your call code".
 // It intentionally has nothing to do with phone numbers, SIM cards, or any
@@ -106,38 +164,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    import("peerjs").then(({ default: Peer }) => {
+    Promise.all([import("peerjs"), fetchIceServers()]).then(([{ default: Peer }, iceServers]) => {
       if (cancelled) return;
       const code = getOrCreateDeviceCode();
       const peer = new Peer(`cryptvora-${code}`, {
         debug: 0,
-        config: {
-          iceServers: [
-            { urls: "stun:stun.l.google.com:19302" },
-            { urls: "stun:stun1.l.google.com:19302" },
-            // Free public TURN relay (openrelay.metered.ca) — without a TURN
-            // server, two phones on different mobile-carrier networks (e.g.
-            // different countries) very often can't establish a direct
-            // connection at all, even though the call *looks* like it's
-            // trying to connect. STUN alone only works for simpler home
-            // wifi-style networks.
-            {
-              urls: "turn:openrelay.metered.ca:80",
-              username: "openrelayproject",
-              credential: "openrelayproject",
-            },
-            {
-              urls: "turn:openrelay.metered.ca:443",
-              username: "openrelayproject",
-              credential: "openrelayproject",
-            },
-            {
-              urls: "turn:openrelay.metered.ca:443?transport=tcp",
-              username: "openrelayproject",
-              credential: "openrelayproject",
-            },
-          ],
-        },
+        config: { iceServers },
       });
       peerRef.current = peer;
 
