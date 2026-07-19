@@ -17,6 +17,7 @@ import { Avatar } from "@/components/avatar";
 import { VerificationBadge } from "@/components/verification-badge";
 import { conversation, type Chat, type Message } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { CallPanel } from "@/components/call/CallPanel";
 
 function roleTag(role?: Message["authorRole"]) {
   if (!role) return null;
@@ -200,6 +201,7 @@ function MessageBubble({ m }: { m: Message }) {
 export function ConversationPanel({ chat }: { chat: Chat }) {
   const [messages, setMessages] = useState<Message[]>(conversation);
   const [draft, setDraft] = useState("");
+  const [callPanelOpen, setCallPanelOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Reset the thread when switching to a different chat, and jump to the
@@ -276,6 +278,7 @@ export function ConversationPanel({ chat }: { chat: Chat }) {
         <div className="flex items-center gap-1">
           <button
             type="button"
+            onClick={() => setCallPanelOpen(true)}
             className="grid size-9 place-items-center rounded-full text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
           >
             <Phone className="size-[18px]" />
@@ -347,6 +350,7 @@ export function ConversationPanel({ chat }: { chat: Chat }) {
           </button>
         </div>
       </div>
+      <CallPanel open={callPanelOpen} onClose={() => setCallPanelOpen(false)} />
     </div>
   );
 }

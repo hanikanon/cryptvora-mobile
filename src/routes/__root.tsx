@@ -13,6 +13,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell, usePageTransitionDirection, SWIPE_TABS } from "../components/app-shell";
 import { ThemeProvider } from "../hooks/use-theme";
+import { CallProvider } from "../hooks/use-call";
+import { CallOverlay } from "../components/call/CallOverlay";
 import { WelcomeScreen } from "../components/auth/WelcomeScreen";
 import { OtpScreen } from "../components/auth/OtpScreen";
 
@@ -179,6 +181,8 @@ function RootComponent() {
             )}
           </AnimatePresence>
         ) : (
+        <CallProvider>
+        <CallOverlay />
         <AppShell>
           <AnimatePresence mode="popLayout" initial={false} custom={direction}>
             {isChatThread ? (
@@ -238,6 +242,7 @@ function RootComponent() {
             )}
           </AnimatePresence>
         </AppShell>
+        </CallProvider>
         )}
       </ThemeProvider>
     </QueryClientProvider>

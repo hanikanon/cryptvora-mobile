@@ -22,6 +22,10 @@ export interface Chat {
   muted?: boolean;
   pinned?: boolean;
   members?: number;
+  /** Real phone number (E.164, e.g. "+213xxxxxxxxx") for the call button to
+   * dial via tel:. Only set on chats that should have a working call button —
+   * leave unset for everyone else. */
+  phone?: string;
 }
 
 export const chats: Chat[] = [

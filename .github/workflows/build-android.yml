@@ -31,6 +31,13 @@ jobs:
       - name: Add Android platform (first run only)
         run: test -d android || npx cap add android
 
+      - name: Grant microphone permission (needed for real voice calls)
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST" || \
+            sed -i 's#<manifest #<manifest #; s#</manifest>#    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n</manifest>#' "$MANIFEST"
+          cat "$MANIFEST"
+
       - name: Generate app icon from resources/icon.png
         run: npx capacitor-assets generate --android
 
