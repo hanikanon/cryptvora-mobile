@@ -1,7 +1,7 @@
-import owlUrl from "@/assets/cryptvora-owl.jpg";
+import logoUrl from "@/assets/cryptvora-logo.png";
 import { cn } from "@/lib/utils";
 
-export const OWL_URL = owlUrl;
+export const OWL_URL = logoUrl;
 
 interface LogoProps {
   size?: number;

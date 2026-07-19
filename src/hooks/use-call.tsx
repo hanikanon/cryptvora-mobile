@@ -8,7 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import type Peer from "peerjs";
-import type { MediaConnection } from "peerjs";
+import type { MediaConnection, DataConnection } from "peerjs";
+import { pickAudioOutputSinkId, applySinkId } from "@/lib/audio-output";
 
 type CallStatus = "idle" | "calling" | "ringing" | "connected";
 type CallKind = "audio" | "video";
@@ -34,6 +35,11 @@ interface CallState {
   peerName: string | null;
   muted: boolean;
   cameraOff: boolean;
+  /** Whether calls should route through the loudspeaker rather than the
+   * earpiece. Best-effort — see lib/audio-output.ts for why this can't be
+   * guaranteed on every Android WebView. */
+  speakerOn: boolean;
+  toggleSpeaker: () => void;
   seconds: number;
   error: string | null;
   localStream: MediaStream | null;
@@ -143,6 +149,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [peerName, setPeerName] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
+  const [speakerOn, setSpeakerOn] = useState(false);
+  const speakerOnRef = useRef(false);
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -161,6 +169,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const visibilityHandlerRef = useRef<(() => void) | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const iceHandlerRef = useRef<(() => void) | null>(null);
+  /** A dedicated, lightweight DataConnection used purely to signal "hang
+   * up" reliably. PeerJS's built-in MediaConnection.close() is *supposed*
+   * to notify the remote side on its own (fixed in peerjs 1.5+), but that
+   * depends on an internal auxiliary data channel that itself needs ICE to
+   * finish — on a flaky cross-network TURN-relayed call, that channel can
+   * simply never open, so the close signal silently never arrives and the
+   * other person's call just hangs there. Opening our own DataConnection
+   * gives us a channel we control and can confirm is actually open. */
+  const ctrlConnRef = useRef<DataConnection | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -219,6 +236,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
         setPeerName(incoming.peer.replace(/^cryptvora-/, ""));
         setStatus("ringing");
       });
+
+      // The caller also opens a small control channel alongside the media
+      // call (see startCall) — this is what lets "hang up" reach the other
+      // person reliably. wireControlChannel is defined further down in this
+      // hook, but by the time this "connection" event actually fires the
+      // whole component body has already finished evaluating for this
+      // render, so it's safely in scope.
+      peer.on("connection", (conn) => {
+        wireControlChannel(conn);
+      });
     });
 
     return () => {
@@ -257,6 +284,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setRemoteStream(null);
     setPlaybackBlocked(false);
     setMediaState("connecting");
+    setSpeakerOn(false);
+    speakerOnRef.current = false;
     detachIceMonitor();
     if (remoteAudioRef.current) {
       remoteAudioRef.current.pause();
@@ -264,9 +293,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
   }, [detachIceMonitor]);
 
+  /** Best-effort — if the control channel never opened (e.g. it's still
+   * negotiating, or that ICE path failed too), this just does nothing and
+   * we fall back to whatever the MediaConnection itself manages to signal. */
+  const sendHangupSignal = useCallback(() => {
+    const conn = ctrlConnRef.current;
+    if (conn?.open) {
+      try {
+        conn.send({ type: "hangup" });
+      } catch {
+        // ignore — best effort
+      }
+    }
+  }, []);
+
   const endCall = useCallback(() => {
+    sendHangupSignal();
     connRef.current?.close();
     connRef.current = null;
+    ctrlConnRef.current?.close();
+    ctrlConnRef.current = null;
     pendingCallRef.current = null;
     cleanupStreams();
     stopTimer();
@@ -276,7 +322,29 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setPeerName(null);
     setMuted(false);
     setCameraOff(false);
-  }, [cleanupStreams]);
+  }, [cleanupStreams, sendHangupSignal]);
+
+  /** Wires up the control DataConnection (either the one we opened as the
+   * caller, or the one we received as the callee) so a "hangup" message
+   * from the other side ends the call on our end too — this is the actual
+   * fix for "I end the call but it doesn't end for my friend". */
+  const wireControlChannel = useCallback(
+    (conn: DataConnection) => {
+      ctrlConnRef.current = conn;
+      conn.on("data", (data) => {
+        if (data && typeof data === "object" && (data as { type?: string }).type === "hangup") {
+          endCall();
+        }
+      });
+      conn.on("close", () => {
+        if (ctrlConnRef.current === conn) ctrlConnRef.current = null;
+      });
+      conn.on("error", () => {
+        if (ctrlConnRef.current === conn) ctrlConnRef.current = null;
+      });
+    },
+    [endCall],
+  );
 
   const wireConnection = useCallback(
     (call: MediaConnection, callKind: CallKind) => {
@@ -299,6 +367,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
           audioEl.autoplay = true;
           audioEl.srcObject = stream;
           audioEl.play().catch(() => setPlaybackBlocked(true));
+          // Voice calls default to the earpiece, like a normal phone call.
+          setSpeakerOn(false);
+          speakerOnRef.current = false;
+          pickAudioOutputSinkId(false).then((sinkId) => applySinkId(audioEl, sinkId));
         } else if (remoteAudioRef.current) {
           // Video calls: the <video> element in the overlay carries both
           // video and audio for this same stream. Make sure the standalone
@@ -306,6 +378,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
           // sound (echo/robotic doubling).
           remoteAudioRef.current.pause();
           remoteAudioRef.current.srcObject = null;
+          // Video calls default to the loudspeaker — nobody holds a video
+          // call up to their ear.
+          setSpeakerOn(true);
+          speakerOnRef.current = true;
         }
 
         setStatus("connected");
@@ -375,8 +451,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
       setError(null);
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: callKind === "video" ? { facingMode: "user" } : false,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          video:
+            callKind === "video"
+              ? {
+                  facingMode: "user",
+                  // Ask for a decent resolution/frame rate explicitly — left
+                  // unset, browsers often default to something quite low
+                  // (especially once a TURN relay is in the path). These are
+                  // "ideal" hints, not hard requirements, so it still
+                  // gracefully degrades on a weak connection instead of
+                  // failing outright.
+                  width: { ideal: 1280 },
+                  height: { ideal: 720 },
+                  frameRate: { ideal: 24, max: 30 },
+                }
+              : false,
         });
         localStreamRef.current = stream;
         setLocalStream(stream);
@@ -385,6 +479,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
         setStatus("calling");
         const call = peer.call(`cryptvora-${cleaned}`, stream, { metadata: { kind: callKind } });
         wireConnection(call, callKind);
+        // Open the dedicated hangup-signaling channel toward the same
+        // device — see the comment on ctrlConnRef for why this exists.
+        wireControlChannel(peer.connect(`cryptvora-${cleaned}`, { reliable: true }));
 
         stopConnectTimeout();
         connectTimeoutRef.current = setTimeout(() => {
@@ -403,7 +500,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         setStatus("idle");
       }
     },
-    [wireConnection, connected, endCall],
+    [wireConnection, wireControlChannel, connected, endCall],
   );
 
   const answerCall = useCallback(async () => {
@@ -413,8 +510,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: callKind === "video" ? { facingMode: "user" } : false,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+        video:
+          callKind === "video"
+            ? {
+                facingMode: "user",
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 24, max: 30 },
+              }
+            : false,
       });
       localStreamRef.current = stream;
       setLocalStream(stream);
@@ -431,11 +540,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
   }, [wireConnection, endCall]);
 
   const declineCall = useCallback(() => {
+    sendHangupSignal();
     pendingCallRef.current?.close();
     pendingCallRef.current = null;
+    ctrlConnRef.current?.close();
+    ctrlConnRef.current = null;
     setStatus("idle");
     setPeerName(null);
-  }, []);
+  }, [sendHangupSignal]);
+
+  const toggleSpeaker = useCallback(() => {
+    const next = !speakerOnRef.current;
+    speakerOnRef.current = next;
+    setSpeakerOn(next);
+    // Only meaningful for audio-only calls here — for video calls the
+    // <video> element lives in CallOverlay, which applies the same
+    // preference to its own element via lib/audio-output.ts.
+    if (kind === "audio") {
+      pickAudioOutputSinkId(next).then((sinkId) => applySinkId(remoteAudioRef.current, sinkId));
+    }
+  }, [kind]);
 
   const toggleMute = useCallback(() => {
     const stream = localStreamRef.current;
@@ -461,6 +585,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
         peerName,
         muted,
         cameraOff,
+        speakerOn,
+        toggleSpeaker,
         seconds,
         error,
         localStream,
