@@ -31,11 +31,11 @@ jobs:
       - name: Add Android platform (first run only)
         run: test -d android || npx cap add android
 
-      - name: Grant microphone permission (needed for real voice calls)
+      - name: Grant camera/microphone permissions (needed for real voice/video calls)
         run: |
           MANIFEST=android/app/src/main/AndroidManifest.xml
           grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST" || \
-            sed -i 's#<manifest #<manifest #; s#</manifest>#    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n</manifest>#' "$MANIFEST"
+            sed -i 's#</manifest>#    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n</manifest>#' "$MANIFEST"
           cat "$MANIFEST"
 
       - name: Generate app icon from resources/icon.png

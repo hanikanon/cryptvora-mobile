@@ -285,6 +285,7 @@ export function ConversationPanel({ chat }: { chat: Chat }) {
           </button>
           <button
             type="button"
+            onClick={() => setCallPanelOpen(true)}
             className="hidden size-9 place-items-center rounded-full text-muted-foreground hover:bg-white/[0.04] hover:text-foreground sm:grid"
           >
             <Video className="size-[18px]" />

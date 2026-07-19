@@ -11,22 +11,28 @@ import type Peer from "peerjs";
 import type { MediaConnection } from "peerjs";
 
 type CallStatus = "idle" | "calling" | "ringing" | "connected";
+type CallKind = "audio" | "video";
 
 interface CallState {
   /** Your own call code — share this with someone so *they* can call *you*. */
   myCallId: string | null;
   status: CallStatus;
+  kind: CallKind;
   /** The other person's call code, once known (either you dialed them, or
    * their code arrived with an incoming call). */
   peerName: string | null;
   muted: boolean;
+  cameraOff: boolean;
   seconds: number;
   error: string | null;
-  startCall: (remoteId: string) => void;
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
+  startCall: (remoteId: string, kind: CallKind) => void;
   answerCall: () => void;
   declineCall: () => void;
   endCall: () => void;
   toggleMute: () => void;
+  toggleCamera: () => void;
 }
 
 const CallContext = createContext<CallState | null>(null);
@@ -50,10 +56,14 @@ function getOrCreateDeviceCode(): string {
 export function CallProvider({ children }: { children: ReactNode }) {
   const [myCallId, setMyCallId] = useState<string | null>(null);
   const [status, setStatus] = useState<CallStatus>("idle");
+  const [kind, setKind] = useState<CallKind>("audio");
   const [peerName, setPeerName] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
+  const [cameraOff, setCameraOff] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
 
   const peerRef = useRef<Peer | null>(null);
   const connRef = useRef<MediaConnection | null>(null);
@@ -61,15 +71,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingCallRef = useRef<MediaConnection | null>(null);
-
-  // Lazily create the Peer connection to the (free, public) broker on first
-  // use rather than at app boot — no need to pay the connection cost for
-  // people who never open the call panel.
-  const ensurePeer = useCallback(() => {
-    if (peerRef.current) return peerRef.current;
-    // Dynamic import keeps peerjs out of the main bundle until it's needed.
-    return null;
-  }, []);
+  const pendingKindRef = useRef<CallKind>("audio");
 
   useEffect(() => {
     let cancelled = false;
@@ -89,8 +91,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
       });
 
       peer.on("call", (incoming) => {
-        // Someone is calling this device right now.
+        // Someone is calling this device right now. The caller tells us
+        // whether it's a video or voice call via metadata.
+        const incomingKind: CallKind = incoming.metadata?.kind === "video" ? "video" : "audio";
         pendingCallRef.current = incoming;
+        pendingKindRef.current = incomingKind;
+        setKind(incomingKind);
         setPeerName(incoming.peer.replace(/^cryptvora-/, ""));
         setStatus("ringing");
       });
@@ -111,6 +117,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const cleanupStreams = useCallback(() => {
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
+    setLocalStream(null);
+    setRemoteStream(null);
     if (remoteAudioRef.current) {
       remoteAudioRef.current.srcObject = null;
     }
@@ -126,17 +134,23 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setStatus("idle");
     setPeerName(null);
     setMuted(false);
+    setCameraOff(false);
   }, [cleanupStreams]);
 
   const wireConnection = useCallback(
     (call: MediaConnection) => {
       connRef.current = call;
-      call.on("stream", (remoteStream) => {
+      call.on("stream", (stream) => {
+        setRemoteStream(stream);
+        // Audio always plays via a dedicated element (works even for video
+        // calls — the <video> tag in the overlay is also allowed to carry
+        // audio, but keeping a fallback audio element is harmless and
+        // guarantees sound even before the overlay's <video> mounts).
         if (!remoteAudioRef.current) {
           remoteAudioRef.current = new Audio();
           remoteAudioRef.current.autoplay = true;
         }
-        remoteAudioRef.current.srcObject = remoteStream;
+        remoteAudioRef.current.srcObject = stream;
         setStatus("connected");
         setSeconds(0);
         stopTimer();
@@ -149,21 +163,30 @@ export function CallProvider({ children }: { children: ReactNode }) {
   );
 
   const startCall = useCallback(
-    async (remoteId: string) => {
+    async (remoteId: string, callKind: CallKind) => {
       const peer = peerRef.current;
       if (!peer) return;
       const cleaned = remoteId.trim().toUpperCase().replace(/^CRYPTVORA-/, "");
       if (!cleaned) return;
       setError(null);
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: callKind === "video" ? { facingMode: "user" } : false,
+        });
         localStreamRef.current = stream;
+        setLocalStream(stream);
+        setKind(callKind);
         setPeerName(cleaned);
         setStatus("calling");
-        const call = peer.call(`cryptvora-${cleaned}`, stream);
+        const call = peer.call(`cryptvora-${cleaned}`, stream, { metadata: { kind: callKind } });
         wireConnection(call);
       } catch {
-        setError("Couldn't access the microphone — check app permissions.");
+        setError(
+          callKind === "video"
+            ? "Couldn't access the camera/microphone — check app permissions."
+            : "Couldn't access the microphone — check app permissions.",
+        );
         setStatus("idle");
       }
     },
@@ -173,14 +196,23 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const answerCall = useCallback(async () => {
     const call = pendingCallRef.current;
     if (!call) return;
+    const callKind = pendingKindRef.current;
     setError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: callKind === "video" ? { facingMode: "user" } : false,
+      });
       localStreamRef.current = stream;
+      setLocalStream(stream);
       call.answer(stream);
       wireConnection(call);
     } catch {
-      setError("Couldn't access the microphone — check app permissions.");
+      setError(
+        callKind === "video"
+          ? "Couldn't access the camera/microphone — check app permissions."
+          : "Couldn't access the microphone — check app permissions.",
+      );
       endCall();
     }
   }, [wireConnection, endCall]);
@@ -199,19 +231,32 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setMuted((m) => !m);
   }, [muted]);
 
+  const toggleCamera = useCallback(() => {
+    const stream = localStreamRef.current;
+    if (!stream) return;
+    stream.getVideoTracks().forEach((t) => (t.enabled = cameraOff));
+    setCameraOff((c) => !c);
+  }, [cameraOff]);
+
   return (
     <CallContext.Provider
       value={{
         myCallId,
         status,
+        kind,
         peerName,
         muted,
+        cameraOff,
         seconds,
         error,
+        localStream,
+        remoteStream,
         startCall,
         answerCall,
         declineCall,
         endCall,
+        toggleMute,
+        toggleCamera,
       }}
     >
       {children}
