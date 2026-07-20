@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Volume2 } from "lucide-react";
 import { OwlMark } from "@/components/logo";
 import { useCall } from "@/hooks/use-call";
 
@@ -34,14 +34,29 @@ export function CallOverlay() {
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
     if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
   }, [localStream]);
 
   useEffect(() => {
-    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
+    const el = remoteVideoRef.current;
+    if (!el) return;
+    el.srcObject = remoteStream;
+    if (!remoteStream) return;
+    // WebViews commonly block autoplay of media *with sound* unless it's
+    // tied directly to a user gesture — the browser sees this play() call
+    // as happening after an async WebRTC negotiation, not as a direct
+    // click, so it can silently refuse. That's what an unresponsive video
+    // with no sound after a call "connects" usually means.
+    el.play().catch(() => setBlocked(true));
   }, [remoteStream]);
+
+  const forcePlay = () => {
+    remoteVideoRef.current?.play().then(() => setBlocked(false)).catch(() => {});
+    setBlocked(false);
+  };
 
   if (status === "idle") return null;
 
@@ -68,6 +83,18 @@ export function CallOverlay() {
           />
         )}
         {showRemoteVideo && <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-black/60" />}
+        {showRemoteVideo && blocked && (
+          <button
+            type="button"
+            onClick={forcePlay}
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/50 text-white"
+          >
+            <span className="grid size-16 place-items-center rounded-full bg-white/15">
+              <Volume2 className="size-7" />
+            </span>
+            <span className="text-sm font-medium">Tap to hear & see {peerName}</span>
+          </button>
+        )}
 
         {/* Your own camera preview, picture-in-picture, only for video calls */}
         {isVideo && localStream && (

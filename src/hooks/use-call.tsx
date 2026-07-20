@@ -61,7 +61,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [myCallId, setMyCallId] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [status, setStatus] = useState<CallStatus>("idle");
-  const [kind, setKind] = useState<CallKind>("audio");
+  const [kind, setKindState] = useState<CallKind>("audio");
+  const kindRef = useRef<CallKind>("audio");
+  const setKind = (k: CallKind) => {
+    kindRef.current = k;
+    setKindState(k);
+  };
   const [peerName, setPeerName] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
@@ -216,15 +221,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
       call.on("stream", (stream) => {
         stopConnectTimeout();
         setRemoteStream(stream);
-        // Audio always plays via a dedicated element (works even for video
-        // calls — the <video> tag in the overlay is also allowed to carry
-        // audio, but keeping a fallback audio element is harmless and
-        // guarantees sound even before the overlay's <video> mounts).
-        if (!remoteAudioRef.current) {
-          remoteAudioRef.current = new Audio();
-          remoteAudioRef.current.autoplay = true;
+        // Voice-only calls have no <video> element in the overlay, so this
+        // dedicated element is what actually plays the audio. Video calls
+        // get their audio from the <video> tag itself — adding this on top
+        // of that would risk doubled/echoing audio.
+        if (kindRef.current === "audio") {
+          if (!remoteAudioRef.current) {
+            remoteAudioRef.current = new Audio();
+          }
+          remoteAudioRef.current.srcObject = stream;
+          remoteAudioRef.current.play().catch(() => setAudioBlocked(true));
         }
-        remoteAudioRef.current.srcObject = stream;
         setStatus("connected");
         setSeconds(0);
         stopTimer();
