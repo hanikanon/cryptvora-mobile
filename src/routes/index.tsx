@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChatList } from "@/components/chat-list";
 import { OwlMark } from "@/components/logo";
-import { Sparkles, MessageSquareText } from "lucide-react";
+import { Sparkles, MessageSquareText, Search, Bell } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,6 +22,36 @@ function ChatsIndex() {
     <div className="lg:grid lg:h-screen lg:grid-cols-[380px_minmax(0,1fr)]">
       {/* Chat list column */}
       <section className="border-r border-border lg:h-screen lg:overflow-hidden">
+        {/* Mobile header — desktop gets the "Chats" header below instead */}
+        <div className="flex items-center justify-between px-4 py-3 lg:hidden">
+          <div className="flex items-center gap-2.5">
+            <OwlMark size={38} />
+            <div>
+              <h1 className="text-[17px] font-bold leading-tight tracking-tight">Cryptvora</h1>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Premium Alpha
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Link
+              to="/search"
+              className="grid size-10 place-items-center rounded-full text-muted-foreground hover:bg-white/5 active:bg-white/10"
+              aria-label="Search"
+            >
+              <Search className="size-[19px]" />
+            </Link>
+            <Link
+              to="/notifications"
+              className="relative grid size-10 place-items-center rounded-full text-muted-foreground hover:bg-white/5 active:bg-white/10"
+              aria-label="Notifications"
+            >
+              <Bell className="size-[19px]" />
+              <span className="absolute right-2 top-2 size-2 rounded-full bg-primary ring-2 ring-background" />
+            </Link>
+          </div>
+        </div>
+
         <div className="hidden items-center justify-between border-b border-border px-5 py-4 lg:flex">
           <div>
             <h1 className="text-lg font-semibold tracking-tight">Chats</h1>
