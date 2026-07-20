@@ -6,11 +6,11 @@ import { Sparkles, MessageSquareText } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Chats — Cryptvora" },
+      { title: "Chats — Hoox" },
       {
         name: "description",
         content:
-          "Your private chats, groups and channels on Cryptvora — the premium community for traders.",
+          "Your private chats, groups and channels on Hoox — the premium community for traders.",
       },
     ],
   }),
@@ -52,7 +52,7 @@ function ChatsIndex() {
             <OwlMark size={96} />
           </div>
           <h2 className="mt-6 text-2xl font-semibold tracking-tight">
-            Welcome to <span className="text-gradient">Cryptvora</span>
+            Welcome to <span className="text-gradient">Hoox</span>
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Select a conversation to jump in, or start a new one. Signal, not noise.

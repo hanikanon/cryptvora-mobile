@@ -21,7 +21,7 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Cryptvora verification & achievement badge system.
+ * Hoox verification & achievement badge system.
  *
  * Each tier has a unique glyph, gradient utility (defined in styles.css) and
  * prestige weight. Rendered as a tiny gem-like chip that sits inline next to a

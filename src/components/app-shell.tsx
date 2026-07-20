@@ -106,7 +106,7 @@ function DesktopRail() {
           className="group flex items-center gap-3 rounded-xl border border-border bg-surface/60 px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
         >
           <Search className="size-4" />
-          <span className="flex-1">Search Cryptvora</span>
+          <span className="flex-1">Search Hoox</span>
           <kbd className="hidden xl:inline-flex items-center rounded-md border border-border bg-background/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
             ⌘K
           </kbd>
@@ -223,7 +223,7 @@ function MobileTopBar() {
   if (!isChats) {
     if (path.startsWith("/chat/")) return null; // conversation has its own header
     // Clean, minimal header everywhere except the Chats home page.
-    const title = primaryNav.find((n) => n.to === path)?.label ?? "Cryptvora";
+    const title = primaryNav.find((n) => n.to === path)?.label ?? "Hoox";
     return (
       <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between border-b border-border/60 bg-background/85 px-4 pt-[max(env(safe-area-inset-top),0.75rem)] pb-3 backdrop-blur-xl">
         <h1 className="text-[17px] font-semibold tracking-tight">{title}</h1>

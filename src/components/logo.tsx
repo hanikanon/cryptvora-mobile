@@ -19,7 +19,7 @@ export function OwlMark({ size = 40, className }: { size?: number; className?: s
       )}
       style={{ width: size, height: size }}
     >
-      <img src={OWL_URL} alt="Cryptvora" className="h-full w-full object-cover" />
+      <img src={OWL_URL} alt="Hoox" className="h-full w-full object-cover" />
     </div>
   );
 }
@@ -31,7 +31,7 @@ export function Logo({ size = 36, className, showWordmark = true, subtitle }: Lo
       {showWordmark && (
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-[17px] font-semibold tracking-tight leading-none">Cryptvora</span>
+            <span className="text-[17px] font-semibold tracking-tight leading-none">Hoox</span>
             <span className="inline-flex size-3.5 items-center justify-center rounded-full bg-primary/20">
               <span className="size-1.5 rounded-full bg-primary" />
             </span>

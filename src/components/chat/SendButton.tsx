@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { Mic, Send } from "lucide-react";
 
-// Signature Cryptvora action button: hex-inspired morph between mic and send.
+// Signature Hoox action button: hex-inspired morph between mic and send.
 export function SendButton({
   mode,
   onSend,

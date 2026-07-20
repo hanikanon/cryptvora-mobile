@@ -10,6 +10,8 @@ import {
 import type Peer from "peerjs";
 import type { MediaConnection, DataConnection } from "peerjs";
 import { pickAudioOutputSinkId, applySinkId } from "@/lib/audio-output";
+import { sendCallPushNotification } from "@/lib/onesignal";
+import { getOrCreateDeviceCode } from "@/lib/device-code";
 
 type CallStatus = "idle" | "calling" | "ringing" | "connected";
 type CallKind = "audio" | "video";
@@ -127,19 +129,9 @@ async function fetchIceServers(): Promise<RTCIceServer[]> {
 
 // One random, memorable-ish code per device, generated once and kept in
 // localStorage — this is what gets shown to the person as "your call code".
-// It intentionally has nothing to do with phone numbers, SIM cards, or any
-// device identifier; it's just a random join code, the same idea as a Zoom
-// meeting ID.
-function getOrCreateDeviceCode(): string {
-  const KEY = "cryptvora_call_code";
-  let code = window.localStorage.getItem(KEY);
-  if (!code) {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
-    code = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-    window.localStorage.setItem(KEY, code);
-  }
-  return code;
-}
+// See lib/device-code.ts (kept there, not here, so lib/onesignal.ts can
+// reuse it without importing from this file and creating a circular
+// dependency between the two).
 
 export function CallProvider({ children }: { children: ReactNode }) {
   const [myCallId, setMyCallId] = useState<string | null>(null);
@@ -482,15 +474,22 @@ export function CallProvider({ children }: { children: ReactNode }) {
         // Open the dedicated hangup-signaling channel toward the same
         // device — see the comment on ctrlConnRef for why this exists.
         wireControlChannel(peer.connect(`cryptvora-${cleaned}`, { reliable: true }));
+        // Best-effort — reaches the other device even if their app is fully
+        // closed. If it's already open, this is redundant with the normal
+        // in-app ring and simply does nothing extra.
+        void sendCallPushNotification(cleaned, getOrCreateDeviceCode(), callKind);
 
         stopConnectTimeout();
         connectTimeoutRef.current = setTimeout(() => {
-          // No "stream" event after 25s means either the other device never
-          // answered (app closed, wrong code), or the two networks couldn't
-          // establish a direct/relayed connection at all.
+          // No "stream" event after 45s means either the other device never
+          // answered (app closed and they didn't see/tap the notification in
+          // time, or don't have the app open at all), or the two networks
+          // couldn't establish a direct/relayed connection at all. 45s (not
+          // the original 25s) to leave enough room for a push notification
+          // to arrive and for them to actually open the app from it.
           setError("Couldn't reach them — make sure they have the app open and the code is right.");
           endCall();
-        }, 25000);
+        }, 45000);
       } catch {
         setError(
           callKind === "video"
