@@ -106,7 +106,7 @@ function DesktopRail() {
           className="group flex items-center gap-3 rounded-xl border border-border bg-surface/60 px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
         >
           <Search className="size-4" />
-          <span className="flex-1">Search Cryptvora</span>
+          <span className="flex-1">Search Hoox</span>
           <kbd className="hidden xl:inline-flex items-center rounded-md border border-border bg-background/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
             ⌘K
           </kbd>
@@ -223,7 +223,7 @@ function MobileTopBar() {
   if (!isChats) {
     if (path.startsWith("/chat/")) return null; // conversation has its own header
     // Clean, minimal header everywhere except the Chats home page.
-    const title = primaryNav.find((n) => n.to === path)?.label ?? "Cryptvora";
+    const title = primaryNav.find((n) => n.to === path)?.label ?? "Hoox";
     return (
       <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between border-b border-border/60 bg-background/85 px-4 pt-[max(env(safe-area-inset-top),0.75rem)] pb-3 backdrop-blur-xl">
         <h1 className="text-[17px] font-semibold tracking-tight">{title}</h1>
@@ -255,6 +255,10 @@ function MobileTopBar() {
 }
 
 function MobileBottomNav() {
+  const current = useActivePath();
+  // Hide on mobile inside a conversation
+  if (current.startsWith("/chat/")) return null;
+
   return <ComposeFab />;
 }
 
@@ -302,7 +306,7 @@ function ComposeFab() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, navOpen]);
 
-  const hiddenOnThisPage = current.startsWith("/chat/");
+  if (current.startsWith("/chat/")) return null;
 
   const startPress = () => {
     longPressed.current = false;
@@ -439,34 +443,24 @@ function ComposeFab() {
         )}
       </AnimatePresence>
 
-      {/* Floating action button — tap to compose, long-press to navigate.
-       * Animates out (rather than vanishing) when a conversation opens,
-       * since on mobile this is the only way to navigate between pages —
-       * an abrupt disappearance here is what made entering a chat feel
-       * broken rather than like a deliberate transition. */}
-      <AnimatePresence>
-        {!hiddenOnThisPage && (
-          <motion.button
-            type="button"
-            onClick={onTap}
-            onPointerDown={startPress}
-            onPointerUp={cancelPress}
-            onPointerLeave={cancelPress}
-            onContextMenu={(e) => e.preventDefault()}
-            aria-label={open ? "Close compose menu" : "Open compose menu — hold to navigate"}
-            aria-expanded={anyOpen}
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ rotate: open ? 45 : 0, scale: anyOpen ? 1.05 : 1, opacity: 1 }}
-            exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.16 } }}
-            whileTap={{ scale: 0.92 }}
-            transition={{ type: "spring", stiffness: 400, damping: 22 }}
-            className="glow-pulse lg:hidden fixed right-4 z-50 grid size-14 place-items-center rounded-full bg-gradient-to-b from-primary to-[color-mix(in_oklab,var(--primary)_78%,black)] text-primary-foreground shadow-[0_0_28px_6px_color-mix(in_oklab,var(--primary)_45%,transparent),0_14px_32px_-10px_color-mix(in_oklab,var(--primary)_55%,transparent)] ring-1 ring-white/10"
-            style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}
-          >
-            {open ? <X className="size-6" /> : <Plus className="size-6" />}
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {/* Floating action button — tap to compose, long-press to navigate */}
+      <motion.button
+        type="button"
+        onClick={onTap}
+        onPointerDown={startPress}
+        onPointerUp={cancelPress}
+        onPointerLeave={cancelPress}
+        onContextMenu={(e) => e.preventDefault()}
+        aria-label={open ? "Close compose menu" : "Open compose menu — hold to navigate"}
+        aria-expanded={anyOpen}
+        whileTap={{ scale: 0.92 }}
+        animate={{ rotate: open ? 45 : 0, scale: anyOpen ? 1.05 : 1 }}
+        transition={{ type: "spring", stiffness: 400, damping: 22 }}
+        className="glow-pulse lg:hidden fixed right-4 z-50 grid size-14 place-items-center rounded-full bg-gradient-to-b from-primary to-[color-mix(in_oklab,var(--primary)_78%,black)] text-primary-foreground shadow-[0_0_28px_6px_color-mix(in_oklab,var(--primary)_45%,transparent),0_14px_32px_-10px_color-mix(in_oklab,var(--primary)_55%,transparent)] ring-1 ring-white/10"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}
+      >
+        {open ? <X className="size-6" /> : <Plus className="size-6" />}
+      </motion.button>
     </>
   );
 }

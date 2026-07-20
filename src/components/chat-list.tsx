@@ -1,11 +1,12 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { BellOff, Pin, Radio, Users, Archive, VolumeX, ShieldOff, Trash2, X } from "lucide-react";
 import { VerificationBadge } from "@/components/verification-badge";
 import { Avatar } from "@/components/avatar";
 import { BottomSheet } from "@/components/bottom-sheet";
-import { chats as initialChats, type Chat } from "@/lib/mock-data";
+import { StoriesBar } from "@/components/stories";
+import { chats, type Chat } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 const filters = [
@@ -22,54 +23,9 @@ function KindIcon({ chat }: { chat: Chat }) {
   return null;
 }
 
-/** Swipe a row left to reveal a delete block underneath — drag past ~50px
- * (or flick) to snap it open, tap the row again to close it, tap the red
- * block to actually delete. Only x/opacity ever animate, so it's cheap. */
-function SwipeableRow({ onDelete, children }: { onDelete: () => void; children: ReactNode }) {
-  const [revealed, setRevealed] = useState(false);
-
-  return (
-    <div className="relative overflow-hidden rounded-2xl">
-      <div className="absolute inset-y-0 right-0 z-0 w-20">
-        <motion.button
-          type="button"
-          onClick={onDelete}
-          initial={false}
-          animate={{ opacity: revealed ? 1 : 0 }}
-          transition={{ duration: 0.15 }}
-          className="flex h-full w-full flex-col items-center justify-center gap-1 rounded-r-2xl bg-red-500 text-white"
-        >
-          <Trash2 className="size-[18px]" />
-          <span className="text-[10px] font-medium">Delete</span>
-        </motion.button>
-      </div>
-      <motion.div
-        drag="x"
-        dragConstraints={{ left: -80, right: 0 }}
-        dragElastic={{ left: 0.15, right: 0 }}
-        dragMomentum={false}
-        animate={{ x: revealed ? -80 : 0 }}
-        transition={{ type: "spring", stiffness: 520, damping: 42 }}
-        onDragEnd={(_, info) => setRevealed(info.offset.x < -45)}
-        onClick={(e) => {
-          if (revealed) {
-            e.preventDefault();
-            e.stopPropagation();
-            setRevealed(false);
-          }
-        }}
-        className="relative z-10 rounded-2xl bg-background"
-      >
-        {children}
-      </motion.div>
-    </div>
-  );
-}
-
 export function ChatList({ activeId }: { activeId?: string }) {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const derivedActive = activeId ?? currentPath.match(/^\/chat\/([^/]+)/)?.[1];
-  const [chats, setChats] = useState(initialChats);
   const [menuChat, setMenuChat] = useState<Chat | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressed = useRef(false);
@@ -92,13 +48,9 @@ export function ChatList({ activeId }: { activeId?: string }) {
     }
   };
 
-  const deleteChat = (id: string) => {
-    setChats((prev) => prev.filter((c) => c.id !== id));
-    setMenuChat((prev) => (prev?.id === id ? null : prev));
-  };
-
   return (
     <div className="flex h-full flex-col">
+      <StoriesBar />
       {/* Filter pills */}
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-3 lg:px-5">
         {filters.map((f, i) => (
@@ -122,7 +74,6 @@ export function ChatList({ activeId }: { activeId?: string }) {
           const isActive = derivedActive === c.id;
           return (
             <li key={c.id}>
-              <SwipeableRow onDelete={() => deleteChat(c.id)}>
               <Link
                 to="/chat/$id"
                 params={{ id: c.id }}
@@ -226,7 +177,6 @@ export function ChatList({ activeId }: { activeId?: string }) {
                   </div>
                 </div>
               </Link>
-              </SwipeableRow>
             </li>
           );
         })}
@@ -253,13 +203,13 @@ export function ChatList({ activeId }: { activeId?: string }) {
                 { icon: menuChat.muted ? BellOff : VolumeX, label: menuChat.muted ? "Unmute" : "Mute" },
                 { icon: Archive, label: "Archive" },
                 { icon: ShieldOff, label: "Block", danger: true },
-                { icon: Trash2, label: "Delete chat", danger: true, action: "delete" },
+                { icon: Trash2, label: "Delete chat", danger: true },
               ].map((action) => (
                 <motion.button
                   key={action.label}
                   whileTap={{ scale: 0.985 }}
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  onClick={() => (action.action === "delete" ? deleteChat(menuChat.id) : setMenuChat(null))}
+                  onClick={() => setMenuChat(null)}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] font-medium hover:bg-white/[0.04]",
                     action.danger ? "text-red-400" : "text-foreground",

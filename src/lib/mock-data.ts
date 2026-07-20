@@ -1,4 +1,4 @@
-// Sample data — Version 1 of Cryptvora is a community platform, not a trading terminal.
+// Sample data — Version 1 of Hoox is a community platform, not a trading terminal.
 // This data seeds the UI so every surface looks production-ready.
 
 import type { BadgeTier } from "@/components/verification-badge";
@@ -58,7 +58,7 @@ export const chats: Chat[] = [
   },
   {
     id: "announcements",
-    name: "Cryptvora Announcements",
+    name: "Hoox Announcements",
     kind: "channel",
     avatarSeed: "owl",
     lastMessage: "New Course: Mastering HFT Basics is now live for Premium members.",
@@ -313,8 +313,8 @@ export const feed: FeedItem[] = [
   {
     id: "f1",
     kind: "featured",
-    author: "Cryptvora Desk",
-    handle: "@cryptvora",
+    author: "Hoox Desk",
+    handle: "@hoox",
     seed: "owl",
     verified: true,
     badge: "official",
@@ -379,8 +379,8 @@ export const feed: FeedItem[] = [
   {
     id: "f5",
     kind: "announcement",
-    author: "Cryptvora",
-    handle: "@cryptvora",
+    author: "Hoox",
+    handle: "@hoox",
     seed: "owl",
     verified: true,
     badge: "official",

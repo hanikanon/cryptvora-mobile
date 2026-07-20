@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.cryptvora.app",
-  appName: "Cryptvora",
+  appName: "Hoox",
   webDir: "dist",
   backgroundColor: "#000000",
   android: {

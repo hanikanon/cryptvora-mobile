@@ -47,7 +47,7 @@ function useQRMatrix(input: string, size = 25) {
 
 export function QRScreen() {
   const { profile } = useSettings();
-  const grid = useQRMatrix(`cryptvora://user/${profile.username}`);
+  const grid = useQRMatrix(`hoox://user/${profile.username}`);
   const size = grid.length;
   const cell = 10;
   const svgRef = useRef<SVGSVGElement>(null);
@@ -71,10 +71,10 @@ export function QRScreen() {
   };
 
   const shareProfile = async () => {
-    const url = `https://cryptvora.io/${profile.username}`;
+    const url = `https://hoox.io/${profile.username}`;
     const data = {
-      title: `${profile.displayName} on Cryptvora`,
-      text: `Connect with @${profile.username} on Cryptvora`,
+      title: `${profile.displayName} on Hoox`,
+      text: `Connect with @${profile.username} on Hoox`,
       url,
     };
     try {
@@ -126,7 +126,7 @@ export function QRScreen() {
         />
         <div className="relative">
           <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--primary)]">
-            Cryptvora ID
+            Hoox ID
           </p>
           <h2 className="text-[20px] font-semibold text-foreground">{profile.displayName}</h2>
           <p className="mb-5 text-[12.5px] text-muted-foreground">@{profile.username}</p>
@@ -213,7 +213,7 @@ export function QRScreen() {
           </button>
 
           <p className="mx-auto mt-4 max-w-[260px] text-[12.5px] text-muted-foreground">
-            Anyone who scans this can start a private chat with you on Cryptvora.
+            Anyone who scans this can start a private chat with you on Hoox.
           </p>
         </div>
       </motion.div>

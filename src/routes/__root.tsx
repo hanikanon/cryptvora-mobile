@@ -32,7 +32,7 @@ function NotFoundComponent() {
             to="/"
             className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Return to Cryptvora
+            Return to Hoox
           </Link>
         </div>
       </div>
@@ -88,14 +88,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1",
       },
       { name: "theme-color", content: "#000000" },
-      { title: "Cryptvora — Premium community for traders" },
+      { title: "Hoox — Premium community for traders" },
       {
         name: "description",
         content:
-          "Cryptvora is a private, premium community platform built for traders. Group chats, channels, courses and memberships in one calm AMOLED experience.",
+          "Hoox is a private, premium community platform built for traders. Group chats, channels, courses and memberships in one calm AMOLED experience.",
       },
-      { name: "author", content: "Cryptvora" },
-      { property: "og:title", content: "Cryptvora — Premium community for traders" },
+      { name: "author", content: "Hoox" },
+      { property: "og:title", content: "Hoox — Premium community for traders" },
       {
         property: "og:description",
         content:
@@ -103,7 +103,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Cryptvora — Premium community for traders" },
+      { name: "twitter:title", content: "Hoox — Premium community for traders" },
       {
         name: "twitter:description",
         content: "Private, premium community platform for traders.",

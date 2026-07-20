@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Phone, Video, Copy, Check } from "lucide-react";
+import { Phone, Video, Copy, Check, MessageCircle } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { useCall } from "@/hooks/use-call";
 
@@ -72,12 +73,12 @@ export function CallPanel({ open, onClose }: { open: boolean; onClose: () => voi
             maxLength={6}
             className="h-12 w-full rounded-xl border border-border bg-white/5 px-4 text-center text-lg font-semibold tracking-[0.15em] outline-none focus:border-primary focus:bg-white/10 focus:ring-2 focus:ring-primary/40"
           />
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="mt-3 grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => call("audio")}
               disabled={!remoteCode.trim() || !connected}
-              className="flex items-center justify-center gap-2 rounded-xl bg-white/10 py-3 text-sm font-semibold text-foreground disabled:opacity-40"
+              className="flex flex-col items-center justify-center gap-1 rounded-xl bg-white/10 py-3 text-xs font-semibold text-foreground disabled:opacity-40"
             >
               <Phone className="size-4" />
               Voice
@@ -86,11 +87,23 @@ export function CallPanel({ open, onClose }: { open: boolean; onClose: () => voi
               type="button"
               onClick={() => call("video")}
               disabled={!remoteCode.trim() || !connected}
-              className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+              className="flex flex-col items-center justify-center gap-1 rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-40"
             >
               <Video className="size-4" />
               Video
             </button>
+            <Link
+              to="/dm/$code"
+              params={{ code: remoteCode.trim().toUpperCase() }}
+              onClick={(e) => {
+                if (!remoteCode.trim()) e.preventDefault();
+                else onClose();
+              }}
+              className={`flex flex-col items-center justify-center gap-1 rounded-xl bg-white/10 py-3 text-xs font-semibold text-foreground ${!remoteCode.trim() ? "pointer-events-none opacity-40" : ""}`}
+            >
+              <MessageCircle className="size-4" />
+              Message
+            </Link>
           </div>
         </div>
 

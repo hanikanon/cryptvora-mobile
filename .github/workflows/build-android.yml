@@ -26,6 +26,8 @@ jobs:
         run: npm install
 
       - name: Build web app
+        env:
+          VITE_ONESIGNAL_REST_API_KEY: ${{ secrets.ONESIGNAL_REST_API_KEY }}
         run: npm run build
 
       - name: Add Android platform (first run only)

@@ -5,7 +5,7 @@ import { Clock, GraduationCap, Star, Check, Crown } from "lucide-react";
 export const Route = createFileRoute("/courses")({
   head: () => ({
     meta: [
-      { title: "Courses & Memberships — Cryptvora" },
+      { title: "Courses & Memberships — Hoox" },
       {
         name: "description",
         content:
@@ -59,14 +59,14 @@ function CoursesPage() {
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-4 lg:px-8 lg:pt-8">
       <header className="mb-8">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
-          Cryptvora Academy
+          Hoox Academy
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight lg:text-4xl">
           Learn from the desks that trade.
         </h1>
         <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">
           Curated video and PDF courses, taught by verified professional traders and
-          creators inside Cryptvora.
+          creators inside Hoox.
         </p>
       </header>
 
