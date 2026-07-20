@@ -3,7 +3,7 @@ import { notifications } from "@/lib/mock-data";
 import { AtSign, MessageCircle, UserPlus, Ticket, GraduationCap } from "lucide-react";
 
 export const Route = createFileRoute("/notifications")({
-  head: () => ({ meta: [{ title: "Notifications — Hoox" }] }),
+  head: () => ({ meta: [{ title: "Notifications — Cryptvora" }] }),
   component: NotificationsPage,
 });
 

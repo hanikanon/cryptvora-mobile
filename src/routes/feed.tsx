@@ -20,13 +20,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/feed")({
   head: () => ({
     meta: [
-      { title: "Feed — Hoox" },
+      { title: "Feed — Cryptvora" },
       {
         name: "description",
         content:
-          "Featured news, verified analyst posts, market updates and educational videos from the Hoox community.",
+          "Featured news, verified analyst posts, market updates and educational videos from the Cryptvora community.",
       },
-      { property: "og:title", content: "Feed — Hoox" },
+      { property: "og:title", content: "Feed — Cryptvora" },
       {
         property: "og:description",
         content:
@@ -97,7 +97,7 @@ function FeedCard({ item }: { item: FeedItem }) {
       {item.pinned && (
         <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
           <Pin className="size-3" />
-          Pinned by Hoox
+          Pinned by Cryptvora
         </div>
       )}
       <header className="flex items-start gap-3">

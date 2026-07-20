@@ -409,7 +409,7 @@ export function EditProfileScreen({ onDone }: { onDone: () => void }) {
         className="mx-5 mt-2 space-y-2.5"
       >
         <SocialCard
-          label="Hoox ID"
+          label="Cryptvora ID"
           value={draft.cryptoId}
           onChange={(v) => update("cryptoId", v)}
           full

@@ -9,10 +9,10 @@ export const Route = createFileRoute("/chat/$id")({
     const chat = chats.find((c) => c.id === params.id);
     return {
       meta: [
-        { title: chat ? `${chat.name} — Hoox` : "Chat — Hoox" },
+        { title: chat ? `${chat.name} — Cryptvora` : "Chat — Cryptvora" },
         {
           name: "description",
-          content: chat?.lastMessage ?? "Private conversation on Hoox.",
+          content: chat?.lastMessage ?? "Private conversation on Cryptvora.",
         },
       ],
     };

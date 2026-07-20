@@ -55,13 +55,13 @@ export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
           className="mt-8 text-4xl font-bold tracking-tight text-white"
           {...fadeUp(0.18)}
         >
-          Hoox
+          Cryptvora
         </motion.h1>
         <motion.p
           className="mt-3 max-w-xs text-center text-[15px] leading-relaxed text-gray-400"
           {...fadeUp(0.32)}
         >
-          Welcome to Hoox — secure messaging powered by Google Authentication.
+          Welcome to Cryptvora — secure messaging powered by Google Authentication.
         </motion.p>
       </div>
 

@@ -5,7 +5,7 @@ import { chats } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/search")({
   head: () => ({
-    meta: [{ title: "Search — Hoox" }],
+    meta: [{ title: "Search — Cryptvora" }],
   }),
   component: SearchPage,
 });

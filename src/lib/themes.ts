@@ -1,5 +1,5 @@
 /**
- * Hoox theme engine — token generation and built-in presets.
+ * Cryptvora theme engine — token generation and built-in presets.
  *
  * Every theme is described as a small "seed" (mode + a couple of hues +
  * chroma/lightness knobs) and expanded into the full CSS custom-property

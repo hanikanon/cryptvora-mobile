@@ -4,7 +4,7 @@ import { SettingsApp } from "@/components/settings/SettingsApp";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — Hoox" },
+      { title: "Settings — Cryptvora" },
       { name: "description", content: "Appearance, account, privacy and notification settings." },
     ],
   }),

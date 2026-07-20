@@ -1,5 +1,5 @@
 {
-  "name": "hoox-chat",
+  "name": "cryptvora-chat",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -46,7 +46,6 @@
     "@capacitor/android": "^7.4.3",
     "@capacitor/app": "^7.1.0",
     "@capacitor/core": "^7.4.3",
-    "@onesignal/capacitor-plugin": "^1.1.4",
     "@capacitor/haptics": "^7.0.2",
     "@capacitor/keyboard": "^7.0.3",
     "@capacitor/splash-screen": "^7.0.3",
