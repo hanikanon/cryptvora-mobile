@@ -79,28 +79,28 @@ function ChatsIndex() {
   return (
     <div className="lg:grid lg:h-screen lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)_320px]">
       {/* Chat list column — always mounted, never unmounts when a chat opens */}
-      <section className="relative border-r border-border lg:h-screen lg:overflow-hidden">
+      <section className="light relative border-r border-border bg-background lg:h-screen lg:overflow-hidden">
         {/* Mobile header: search — logo · wordmark · badge — notifications */}
         <div className="flex items-center justify-between px-4 py-3 lg:hidden">
           <Link
             to="/search"
-            className="grid size-10 place-items-center rounded-full text-muted-foreground hover:bg-white/5 active:bg-white/10"
+            className="grid size-11 place-items-center rounded-full text-foreground ring-1 ring-border hover:bg-black/[0.03] active:bg-black/[0.06]"
             aria-label="Search"
           >
             <Search className="size-[19px]" />
           </Link>
           <div className="flex items-center gap-1.5">
-            <OwlMark size={26} />
-            <span className="text-[16px] font-bold tracking-tight">Cryptvora</span>
-            <BadgeCheck className="size-4 text-primary" />
+            <OwlMark size={30} />
+            <span className="text-[19px] font-bold tracking-tight text-foreground">Cryptvora</span>
+            <BadgeCheck className="size-[18px] text-primary" />
           </div>
           <Link
             to="/notifications"
-            className="relative grid size-10 place-items-center rounded-full text-muted-foreground hover:bg-white/5 active:bg-white/10"
+            className="relative grid size-11 place-items-center rounded-full text-foreground ring-1 ring-border hover:bg-black/[0.03] active:bg-black/[0.06]"
             aria-label="Notifications"
           >
             <Bell className="size-[19px]" />
-            <span className="absolute right-2 top-2 size-2 rounded-full bg-primary ring-2 ring-background" />
+            <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-primary ring-2 ring-background" />
           </Link>
         </div>
 

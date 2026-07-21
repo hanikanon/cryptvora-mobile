@@ -129,7 +129,7 @@ export function ChatList({
               <span
                 className={cn(
                   "rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none",
-                  i === 0 ? "bg-white/20" : "bg-white/10",
+                  i === 0 ? "bg-white/25 text-primary-foreground" : "bg-foreground/10 text-foreground",
                 )}
               >
                 {filterCount(f.id, chats)}
@@ -144,7 +144,7 @@ export function ChatList({
           <button
             type="button"
             onClick={() => onSelect({ id: "saved", name: "Saved Messages", kind: "dm", avatarSeed: "saved", lastMessage: "", time: "" })}
-            className="press flex w-full items-center gap-3.5 rounded-2xl p-3 text-left transition-all hover:bg-white/[0.03]"
+            className="press flex w-full items-center gap-3.5 rounded-2xl p-3 text-left transition-all hover:bg-black/[0.03]"
           >
             <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
               <Bookmark className="size-5" />
@@ -173,8 +173,8 @@ export function ChatList({
                 className={cn(
                   "press flex w-full items-center gap-3.5 rounded-2xl p-3 text-left transition-all",
                   isActive
-                    ? "bg-white/[0.05] ring-1 ring-border-strong"
-                    : "hover:bg-white/[0.03]",
+                    ? "bg-black/[0.04] ring-1 ring-border-strong"
+                    : "hover:bg-black/[0.03]",
                 )}
               >
                 <Avatar
@@ -272,7 +272,7 @@ export function ChatList({
       </ul>
 
       {/* Long-press context menu */}
-      <BottomSheet open={!!menuChat} onClose={() => setMenuChat(null)}>
+      <BottomSheet open={!!menuChat} onClose={() => setMenuChat(null)} className="light">
         {menuChat && (
           <>
             <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3">
@@ -300,14 +300,14 @@ export function ChatList({
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   onClick={() => (action.action === "delete" ? deleteChat(menuChat.id) : setMenuChat(null))}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] font-medium hover:bg-white/[0.04]",
+                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] font-medium hover:bg-black/[0.04]",
                     action.danger ? "text-red-400" : "text-foreground",
                   )}
                 >
                   <span
                     className={cn(
                       "grid size-8 place-items-center rounded-lg",
-                      action.danger ? "bg-red-400/12" : "bg-white/[0.06]",
+                      action.danger ? "bg-red-400/12" : "bg-black/[0.05]",
                     )}
                   >
                     <action.icon className="size-[17px]" />

@@ -22,11 +22,16 @@ export function BottomSheet({
   onClose,
   title,
   children,
+  className,
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
   children: ReactNode;
+  /** Extra classes on the sheet's content panel — e.g. "light", when this
+   * is opened from a page that's using the scoped light theme, since the
+   * sheet portals to document.body and won't otherwise inherit it. */
+  className?: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -73,7 +78,7 @@ export function BottomSheet({
               boxShadow: "0 -12px 40px -18px rgba(0,0,0,0.5)",
               willChange: "transform",
             }}
-            className="relative z-10 w-full max-w-[520px] rounded-t-[20px] border-t border-border bg-surface pb-2 pt-1.5 lg:max-w-[400px] lg:rounded-[20px] lg:border"
+            className={`relative z-10 w-full max-w-[520px] rounded-t-[20px] border-t border-border bg-surface pb-2 pt-1.5 lg:max-w-[400px] lg:rounded-[20px] lg:border ${className ?? ""}`}
           >
             <div className="mx-auto mb-1 h-1 w-9 shrink-0 rounded-full bg-[color-mix(in_oklab,var(--foreground)_18%,transparent)] lg:hidden" />
             {title && (
