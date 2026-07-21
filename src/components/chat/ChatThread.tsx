@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
+import { Lock } from "lucide-react";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { Composer } from "@/components/chat/Composer";
 import { MessageItem, type Message, type MessageAction } from "@/components/chat/MessageItem";
@@ -19,7 +20,7 @@ const initialMessages: Message[] = [
   { id: "6", author: "them", time: "14:22", text: "Breaking support at 62k — watching for a retest before adding size." },
 ];
 
-export function ChatThread({ chat }: { chat: Chat }) {
+export function ChatThread({ chat, onBack }: { chat: Chat; onBack: () => void }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [typing, setTyping] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -178,11 +179,18 @@ export function ChatThread({ chat }: { chat: Chat }) {
             online={chat.online}
             onSearch={() => setSearching(true)}
             onMenuAction={onMenuAction}
+            onBack={onBack}
           />
         )}
       </AnimatePresence>
 
       <div ref={scrollerRef} className="scroll-fade flex-1 space-y-1.5 overflow-y-auto py-3">
+        <div className="mb-2 flex justify-center px-6">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-muted-foreground">
+            <Lock className="size-3" />
+            End-to-end encrypted
+          </span>
+        </div>
         <DateChip label="Today" />
         {messages.map((m) => {
           const isNew = !seenIds.current.has(m.id);

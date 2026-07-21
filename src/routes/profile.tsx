@@ -17,8 +17,8 @@ import {
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Profile — Hoox" },
-      { name: "description", content: "Your Hoox trader profile." },
+      { title: "Profile — Cryptvora" },
+      { name: "description", content: "Your Cryptvora trader profile." },
     ],
   }),
   component: ProfilePage,
@@ -81,7 +81,7 @@ function ProfilePage() {
 
         <p className="mt-5 max-w-2xl text-[14px] leading-relaxed text-foreground/85">
           Night-shift crypto trader. Order flow, structure, and calm risk. Building
-          Hoox — a private members' lounge for traders.
+          Cryptvora — a private members' lounge for traders.
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-muted-foreground">
@@ -92,7 +92,7 @@ function ProfilePage() {
             href="#"
             className="inline-flex items-center gap-1.5 text-primary hover:underline"
           >
-            <Globe className="size-3.5" /> hoox.com
+            <Globe className="size-3.5" /> cryptvora.com
           </a>
         </div>
 

@@ -53,13 +53,13 @@ export type BadgeDef = {
 
 export const BADGES: BadgeDef[] = [
   { id: "none", label: "No badge", from: "#64748b", to: "#475569", description: "Hide badge on profile" },
-  { id: "official", label: "Official", from: "#3b82f6", to: "#0ea5e9", description: "Official Hoox account" },
+  { id: "official", label: "Official", from: "#3b82f6", to: "#0ea5e9", description: "Official Cryptvora account" },
   { id: "verified", label: "Verified", from: "#a855f7", to: "#7c3aed", description: "Identity verified" },
   { id: "premium", label: "Premium", from: "#f59e0b", to: "#d97706", description: "Premium member" },
   { id: "creator", label: "Creator", from: "#ec4899", to: "#a855f7", description: "Content creator" },
   { id: "analyst", label: "Analyst", from: "#22d3ee", to: "#0891b2", description: "Certified market analyst" },
   { id: "educator", label: "Educator", from: "#84cc16", to: "#16a34a", description: "Trading educator" },
-  { id: "partner", label: "Partner", from: "#eab308", to: "#f59e0b", description: "Hoox partner" },
+  { id: "partner", label: "Partner", from: "#eab308", to: "#f59e0b", description: "Cryptvora partner" },
   { id: "top-trader", label: "Top Trader", from: "#10b981", to: "#059669", description: "Ranked top trader" },
 ];
 
@@ -321,8 +321,8 @@ const DEFAULT_PROFILE: Profile = {
   username: "alex.morgan",
   bio: "Building alpha, one candle at a time. Crypto trader · DeFi native.",
   phone: "+1 (555) 018-2201",
-  email: "alex@hoox.io",
-  website: "hoox.io/alex",
+  email: "alex@cryptvora.io",
+  website: "cryptvora.io/alex",
   birthday: "1996-04-12",
   location: "Lisbon, Portugal",
   avatarColor: "var(--gradient-brand)",

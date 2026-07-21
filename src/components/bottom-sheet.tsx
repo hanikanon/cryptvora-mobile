@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 /**
  * A native-feeling bottom sheet: backdrop fade, spring-driven slide up, and
  * genuine drag-to-dismiss (flick down fast, or drag past ~100px, to close).
- * Ported from Hoox's reference animation system — kept deliberately
+ * Ported from Cryptvora's reference animation system — kept deliberately
  * light: only `transform`/`opacity` ever animate, so it stays GPU-composited
  * and cheap even on mid-range Android.
  *

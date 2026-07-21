@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Crown } from "lucide-react";
 
 export const Route = createFileRoute("/memberships")({
-  head: () => ({ meta: [{ title: "Memberships — Hoox" }] }),
+  head: () => ({ meta: [{ title: "Memberships — Cryptvora" }] }),
   component: () => (
     <div className="mx-auto max-w-3xl px-4 pb-24 pt-4 lg:px-8 lg:pt-8">
       <div className="rounded-3xl border border-primary/25 bg-primary/[0.06] p-8 text-center ring-1 ring-primary/20 shadow-glow">

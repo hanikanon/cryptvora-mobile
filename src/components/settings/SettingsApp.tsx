@@ -228,7 +228,7 @@ function SettingsRoutes({ speed }: { speed: number }) {
 
               <SettingGroup label="Support" delay={0.2}>
                 <SettingItem icon={HelpCircle} label="Help & Support" onClick={() => go("help")} />
-                <SettingItem icon={Info} label="About Hoox" description="Version 1.0.0 · Terms · Privacy" onClick={() => go("about")} last />
+                <SettingItem icon={Info} label="About Cryptvora" description="Version 1.0.0 · Terms · Privacy" onClick={() => go("about")} last />
               </SettingGroup>
 
               <SettingGroup delay={0.25}>
@@ -236,7 +236,7 @@ function SettingsRoutes({ speed }: { speed: number }) {
               </SettingGroup>
 
               <p className="mt-2 text-center text-[11.5px] text-muted-foreground">
-                Hoox · Built for traders
+                Cryptvora · Built for traders
               </p>
             </motion.div>
           ) : (
@@ -256,7 +256,7 @@ function SettingsRoutes({ speed }: { speed: number }) {
                   <SettingGroup label="Identity">
                     <SettingItem icon={AtSign} label="Username" trailing="@alex.morgan" />
                     <SettingItem icon={Phone} label="Phone" trailing="+1 (555) 018-2201" />
-                    <SettingItem icon={Mail} label="Email" trailing="alex@hoox.io" last />
+                    <SettingItem icon={Mail} label="Email" trailing="alex@cryptvora.io" last />
                   </SettingGroup>
                   <SettingGroup label="Actions">
                     <SettingItem icon={User} label="Edit profile" onClick={() => go("editProfile")} last />
@@ -368,7 +368,7 @@ function SettingsRoutes({ speed }: { speed: number }) {
                     <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-white" style={{ background: "var(--gradient-brand)" }}>
                       <Sparkles size={26} />
                     </div>
-                    <h2 className="text-[20px] font-semibold text-foreground">Hoox</h2>
+                    <h2 className="text-[20px] font-semibold text-foreground">Cryptvora</h2>
                     <p className="mt-1 text-[13px] text-muted-foreground">Version 1.0.0 (build 2026.7)</p>
                     <p className="mt-4 max-w-[280px] text-[12.5px] text-muted-foreground">
                       A premium community platform built for traders. Private by default, fast by design.

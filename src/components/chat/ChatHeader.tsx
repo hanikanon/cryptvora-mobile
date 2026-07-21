@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Link } from "@tanstack/react-router";
 import {
   Phone, Video, Search, MoreVertical, ArrowLeft,
   BellOff, User, FileSearch, Images, Pin, Archive, Ban, Flag, Trash2,
@@ -39,7 +38,7 @@ const sections: Section[] = [
 ];
 
 export function ChatHeader({
-  name, status, avatarSeed, online, onSearch, onMenuAction,
+  name, status, avatarSeed, online, onSearch, onMenuAction, onBack,
 }: {
   name: string;
   status: string;
@@ -47,6 +46,7 @@ export function ChatHeader({
   online?: boolean;
   onSearch?: () => void;
   onMenuAction?: (label: string) => void;
+  onBack: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
@@ -63,9 +63,9 @@ export function ChatHeader({
   return (
     <div className="sticky top-0 z-30 px-2 pt-[max(env(safe-area-inset-top),0.375rem)] pb-1.5">
       <div className="pill-bar gpu flex items-center gap-0.5 px-1.5 py-1">
-        <Link to="/" aria-label="Back" className="tap active:tap-active flex h-9 w-9 items-center justify-center rounded-full text-foreground/80 hover:bg-white/5 active:bg-white/10">
+        <button type="button" onClick={onBack} aria-label="Back" className="tap active:tap-active flex h-9 w-9 items-center justify-center rounded-full text-foreground/80 hover:bg-white/5 active:bg-white/10">
           <ArrowLeft className="h-[18px] w-[18px]" />
-        </Link>
+        </button>
 
         <button className="tap active:tap-active flex flex-1 items-center gap-2.5 rounded-2xl px-1 py-0.5 text-left">
           <div className="relative">
